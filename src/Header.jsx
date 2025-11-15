@@ -10,39 +10,52 @@ export default function Header() {
       width: '100%',
       display: 'flex',
       alignItems: 'center',
-      paddingLeft: 32,
-      paddingTop: 16,
-      paddingBottom: 16,
-      background: '#fff',
-      boxShadow: '0 2px 12px rgba(0,0,0,0.07)'
+      padding: '24px 48px 24px 48px',
+      background: 'linear-gradient(90deg, #fffbe6 0%, #f7c873 100%)',
+      borderBottom: '4px solid #f7c873',
+      boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
+      position: 'relative',
+      zIndex: 20
     }}>
-      <img
-        src={fflIcon}
-        alt="FFL Icon"
-        style={{
-          height: 80,
-          width: 80,
-          verticalAlign: 'middle',
-          marginRight: 24,
-          borderRadius: 12,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.10)'
-        }}
-      />
-      <span style={{
-        display: 'inline-block',
-        fontSize: '1.5em',
-        fontWeight: 500,
-        letterSpacing: '0.02em',
-        color: '#333',
-        padding: '0.1em 0.4em',
-        borderRadius: '8px',
-        background: 'none',
-        border: 'none',
-        boxShadow: 'none',
-        maxWidth: 600
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        background: 'rgba(255,255,255,0.85)',
+        borderRadius: 24,
+        padding: '12px 32px 12px 12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
       }}>
-        AI-generated foreclosure information: timely, accurate, and a benefit to both investor-buyers and distressed property owners
-      </span>
+        <img
+          src={fflIcon}
+          alt="FFL Icon"
+          style={{
+            height: 120,
+            width: 120,
+            verticalAlign: 'middle',
+            marginRight: 32,
+            borderRadius: 20,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.13)',
+            border: '3px solid #f7c873',
+            background: '#fffbe6'
+          }}
+        />
+        <span style={{
+          display: 'inline-block',
+          fontSize: '1.7em',
+          fontWeight: 600,
+          letterSpacing: '0.01em',
+          color: '#7a5c1c',
+          padding: '0.2em 0.6em',
+          borderRadius: '12px',
+          background: 'linear-gradient(90deg, #fffbe6 60%, #f7c873 100%)',
+          border: '1.5px solid #f7c873',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          maxWidth: 700,
+          textShadow: '0 2px 8px #fffbe6, 0 1px 0 #fff'
+        }}>
+          AI-generated foreclosure information: timely, accurate, and a benefit to both investor-buyers and distressed property owners
+        </span>
+      </div>
     </header>
   );
 }
