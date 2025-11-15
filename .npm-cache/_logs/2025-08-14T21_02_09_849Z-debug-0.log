@@ -1,0 +1,81 @@
+0 verbose cli /usr/local/bin/node /usr/local/bin/npm
+1 info using npm@10.9.3
+2 info using node@v22.18.0
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/tinman/Projects/HealthHub/frontend/.npmrc
+5 silly config load:file:/Users/tinman/.npmrc
+6 silly config load:file:/Users/tinman/Projects/HealthHub/frontend/etc/npmrc
+7 verbose title npm install
+8 verbose argv "--prefix" "frontend" "install"
+9 verbose logfile logs-max:10 dir:/Users/tinman/Projects/.npm-cache/_logs/2025-08-14T21_02_09_849Z-
+10 verbose logfile /Users/tinman/Projects/.npm-cache/_logs/2025-08-14T21_02_09_849Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 silly idealTree buildDeps
+14 silly reify moves {}
+15 verbose reify failed optional dependency /Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-win32-x64
+16 silly reify mark deleted [
+16 silly reify   '/Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-win32-x64'
+16 silly reify ]
+17 verbose reify failed optional dependency /Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-win32-ia32
+18 silly reify mark deleted [
+18 silly reify   '/Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-win32-ia32'
+18 silly reify ]
+19 verbose reify failed optional dependency /Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-win32-arm64
+20 silly reify mark deleted [
+20 silly reify   '/Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-win32-arm64'
+20 silly reify ]
+21 verbose reify failed optional dependency /Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-linux-x64-musl
+22 silly reify mark deleted [
+22 silly reify   '/Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-linux-x64-musl'
+22 silly reify ]
+23 verbose reify failed optional dependency /Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-linux-x64-glibc
+24 silly reify mark deleted [
+24 silly reify   '/Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-linux-x64-glibc'
+24 silly reify ]
+25 verbose reify failed optional dependency /Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-linux-arm64-musl
+26 silly reify mark deleted [
+26 silly reify   '/Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-linux-arm64-musl'
+26 silly reify ]
+27 verbose reify failed optional dependency /Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-linux-arm64-glibc
+28 silly reify mark deleted [
+28 silly reify   '/Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-linux-arm64-glibc'
+28 silly reify ]
+29 verbose reify failed optional dependency /Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-linux-arm-musl
+30 silly reify mark deleted [
+30 silly reify   '/Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-linux-arm-musl'
+30 silly reify ]
+31 verbose reify failed optional dependency /Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-linux-arm-glibc
+32 silly reify mark deleted [
+32 silly reify   '/Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-linux-arm-glibc'
+32 silly reify ]
+33 verbose reify failed optional dependency /Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-freebsd-x64
+34 silly reify mark deleted [
+34 silly reify   '/Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-freebsd-x64'
+34 silly reify ]
+35 verbose reify failed optional dependency /Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-darwin-x64
+36 silly reify mark deleted [
+36 silly reify   '/Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-darwin-x64'
+36 silly reify ]
+37 verbose reify failed optional dependency /Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-android-arm64
+38 silly reify mark deleted [
+38 silly reify   '/Users/tinman/Projects/HealthHub/frontend/node_modules/@parcel/watcher-android-arm64'
+38 silly reify ]
+39 silly ADD
+40 silly ADD
+41 silly ADD
+42 silly ADD
+43 silly ADD
+44 silly ADD
+45 silly ADD
+46 silly ADD
+47 silly ADD
+48 silly ADD
+49 silly ADD
+50 silly ADD
+51 verbose cwd /Users/tinman/Projects/HealthHub
+52 verbose os Darwin 24.5.0
+53 verbose node v22.18.0
+54 verbose npm  v10.9.3
+55 verbose exit 0
+56 info ok

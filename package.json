@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "firebase": "^12.5.0",
+    "react-places-autocomplete": "^7.3.0"
+  },
+  "devDependencies": {
+    "vite": "^7.1.12"
+  }
+}
