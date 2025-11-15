@@ -12,24 +12,7 @@ import "./App.css";
 function Home() {
   return (
     <>
-      <div style={{ width: '100vw', background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.07)', zIndex: 10 }}>
-        <h1 style={{
-          fontSize: '2.5em',
-          fontWeight: 700,
-          letterSpacing: '0.04em',
-          color: '#f7c873',
-          textShadow: '1px 2px 8px #2222, 0 1px 0 #fff',
-          padding: '0.3em 0.4em 0.2em 0.4em',
-          borderRadius: '0 0 18px 18px',
-          background: 'linear-gradient(90deg, #fffbe6 60%, #f7c873 100%)',
-          borderBottom: '2px solid #f7c873',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
-          margin: 0,
-          textAlign: 'center',
-        }}>
-          Free Foreclosure List
-        </h1>
-      </div>
+      <Header />
       <div className="container" style={{ display: 'flex', minHeight: '100vh' }}>
         <aside style={{ width: 280, background: '#f7f7f7', padding: '32px 16px 16px 16px', boxShadow: '2px 0 8px #eee', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           <h2 style={{ fontSize: 24, marginBottom: 16 }}>FreeForeclosureList.net</h2>

@@ -1,8 +1,22 @@
+
 import React from "react";
+import fflIcon from './assets/FFL icon.png';
 
 export default function Header() {
   return (
     <header style={{ marginBottom: 32, textAlign: 'center', width: '100%' }}>
+      <img
+        src={fflIcon}
+        alt="FFL Icon"
+        style={{
+          height: 48,
+          width: 48,
+          verticalAlign: 'middle',
+          marginRight: 16,
+          borderRadius: 8,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.10)'
+        }}
+      />
       <span style={{
         display: 'inline-block',
         fontSize: '2.5em',
