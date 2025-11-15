@@ -3,10 +3,12 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 
+
 import OrangeCounty from "./pages/OrangeCounty";
 import OsceolaCounty from "./pages/OsceolaCounty";
 import SeminoleCounty from "./pages/SeminoleCounty";
 import Header from "./Header";
+import reactLogo from "./assets/react.svg";
 import "./App.css";
 
 function Home() {
@@ -14,8 +16,7 @@ function Home() {
     <>
       <Header />
       <div className="container" style={{ display: 'flex', minHeight: '100vh' }}>
-        <aside style={{ width: 280, background: '#f7f7f7', padding: '32px 16px 16px 16px', boxShadow: '2px 0 8px #eee', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <h2 style={{ fontSize: 24, marginBottom: 16 }}>FreeForeclosureList.net</h2>
+  <aside style={{ minWidth: 110, maxWidth: 130, background: '#f7f7f7', padding: '32px 8px 16px 8px', boxShadow: '2px 0 8px #eee', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, width: '100%' }}>
             <Link to="/">Home</Link>
             <Link to="/orange">Orange County</Link>
@@ -34,8 +35,11 @@ function Home() {
             </div>
           </main>
           <footer className="footer">
-            <div>FreeForeclosureList.net</div>
-            <div>©{new Date().getFullYear()} by FreeForeclosureList. Proudly created with Wix.com</div>
+            <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+              ©{new Date().getFullYear()} by FreeForeclosureList.net
+              <img src={reactLogo} alt="React" style={{height: 24, width: 24, margin: '0 4px'}} />
+              - Built with React
+            </div>
           </footer>
         </div>
       </div>
