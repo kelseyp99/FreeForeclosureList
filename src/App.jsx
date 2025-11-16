@@ -12,17 +12,83 @@ import reactLogo from "./assets/react.svg";
 import GoogleAuthButton from "./GoogleAuthButton";
 import "./App.css";
 
+// List of all Florida counties (alphabetical, no 'County' in label)
+const FLORIDA_COUNTIES = [
+  "Alachua", "Baker", "Bay", "Bradford", "Brevard", "Broward", "Calhoun", "Charlotte", "Citrus", "Clay", "Collier", "Columbia", "DeSoto", "Dixie", "Duval", "Escambia", "Flagler", "Franklin", "Gadsden", "Gilchrist", "Glades", "Gulf", "Hamilton", "Hardee", "Hendry", "Hernando", "Highlands", "Hillsborough", "Holmes", "Indian River", "Jackson", "Jefferson", "Lafayette", "Lake", "Lee", "Leon", "Levy", "Liberty", "Madison", "Manatee", "Marion", "Martin", "Miami-Dade", "Monroe", "Nassau", "Okaloosa", "Okeechobee", "Orange", "Osceola", "Palm Beach", "Pasco", "Pinellas", "Polk", "Putnam", "St. Johns", "St. Lucie", "Santa Rosa", "Sarasota", "Seminole", "Sumter", "Suwannee", "Taylor", "Union", "Volusia", "Wakulla", "Walton", "Washington"
+];
+
+function toCountyPath(name) {
+  // Convert county name to lowercase, remove spaces/dots, and use dashes for multi-part names
+  return "/" + name.toLowerCase().replace(/\./g, '').replace(/ /g, '').replace(/-/g, '');
+}
+
 function Home() {
+  const [dropdownOpen, setDropdownOpen] = React.useState(false);
   return (
     <>
       <Header />
       <div className="container" style={{ display: 'flex', minHeight: '100vh' }}>
-        <aside style={{ minWidth: 110, maxWidth: 130, background: '#f7f7f7', padding: '32px 8px 16px 8px', boxShadow: '2px 0 8px #eee', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+        <aside style={{ minWidth: 110, maxWidth: 180, background: '#f7f7f7', padding: '32px 8px 16px 8px', boxShadow: '2px 0 8px #eee', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, width: '100%' }}>
             <Link to="/">Home</Link>
-            <Link to="/orange">Orange County</Link>
-            <Link to="/osceola">Osceola County</Link>
-            <Link to="/seminole">Seminole County</Link>
+            <div style={{ width: '100%' }}>
+              <button
+                onClick={() => setDropdownOpen((open) => !open)}
+                style={{
+                  width: '100%',
+                  background: '#f7c873',
+                  color: '#7a5c1c',
+                  fontWeight: 600,
+                  border: '1px solid #e0b24d',
+                  borderRadius: 6,
+                  padding: '8px 10px',
+                  cursor: 'pointer',
+                  marginBottom: 4,
+                  fontSize: 16,
+                  textAlign: 'left',
+                  boxShadow: dropdownOpen ? '0 2px 8px #f7c87355' : 'none',
+                  transition: 'box-shadow 0.2s'
+                }}
+                aria-expanded={dropdownOpen}
+                aria-controls="county-dropdown"
+              >
+                Florida Counties {dropdownOpen ? '▲' : '▼'}
+              </button>
+              {dropdownOpen && (
+                <div id="county-dropdown" style={{
+                  maxHeight: 340,
+                  overflowY: 'auto',
+                  background: '#fffbe6',
+                  border: '1px solid #f7c873',
+                  borderRadius: 6,
+                  boxShadow: '0 2px 12px #f7c87333',
+                  marginTop: 2,
+                  padding: '4px 0',
+                  zIndex: 10,
+                  position: 'relative',
+                }}>
+                  {FLORIDA_COUNTIES.map((county) => (
+                    <Link
+                      key={county}
+                      to={toCountyPath(county)}
+                      style={{
+                        display: 'block',
+                        padding: '7px 18px',
+                        color: '#7a5c1c',
+                        textDecoration: 'none',
+                        fontSize: 15,
+                        borderBottom: '1px solid #f7c87333',
+                        background: 'none',
+                        transition: 'background 0.15s',
+                      }}
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      {county}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           </nav>
           {/* AdSense Ad below menu */}
           <div style={{ width: '100%', minWidth: 100, height: 120, background: '#f7f7f7', border: '1px solid #eee', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#aaa', marginTop: 16 }}>
