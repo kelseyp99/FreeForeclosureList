@@ -1,6 +1,7 @@
 
 import React from "react";
 import fflIcon from './assets/FFL icon.png';
+import GoogleAuthButton from './GoogleAuthButton';
 
 export default function Header() {
   return (
@@ -10,6 +11,7 @@ export default function Header() {
       width: '100%',
       display: 'flex',
       alignItems: 'center',
+      justifyContent: 'space-between',
       padding: '24px 48px 24px 48px',
       background: 'linear-gradient(90deg, #fffbe6 0%, #f7c873 100%)',
       borderBottom: '4px solid #f7c873',
@@ -55,6 +57,9 @@ export default function Header() {
         }}>
           AI-generated foreclosure information: timely, accurate, and a benefit to both investor-buyers and distressed property owners
         </span>
+      </div>
+      <div style={{ marginLeft: 32 }}>
+        <GoogleAuthButton />
       </div>
     </header>
   );
