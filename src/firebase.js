@@ -2,13 +2,14 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 
-// TODO: Replace with your Firebase config
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  appId: "YOUR_APP_ID",
-  // ...other config
+  apiKey: "AIzaSyBW3biS7ROg58IH21vvPZ42DbpsaJMCQ-Y",
+  authDomain: "foreclosure-15f09.firebaseapp.com",
+  projectId: "foreclosure-15f09",
+  storageBucket: "foreclosure-15f09.firebasestorage.app",
+  messagingSenderId: "719554951830",
+  appId: "1:719554951830:web:ac5f63a889ea95c95460b7",
+  measurementId: "G-0F2LF33GM3"
 };
 
 const app = initializeApp(firebaseConfig);
