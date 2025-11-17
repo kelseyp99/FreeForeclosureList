@@ -7,6 +7,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import OrangeCounty from "./pages/OrangeCounty";
 import OsceolaCounty from "./pages/OsceolaCounty";
 import SeminoleCounty from "./pages/SeminoleCounty";
+import AuctionsPanel from "./pages/AuctionsPanel";
 import Header from "./Header";
 import reactLogo from "./assets/react.svg";
 import GoogleAuthButton from "./GoogleAuthButton";
@@ -31,6 +32,7 @@ function Home() {
         <aside style={{ minWidth: 110, maxWidth: 180, background: '#f7f7f7', padding: '32px 8px 16px 8px', boxShadow: '2px 0 8px #eee', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, width: '100%' }}>
             <Link to="/">Home</Link>
+            <Link to="/auctions">Auctions</Link>
             <div style={{ width: '100%' }}>
               <button
                 onClick={() => setDropdownOpen((open) => !open)}
@@ -105,6 +107,7 @@ function Home() {
                 <p>In addition to our comprehensive foreclosure data, we also offer exclusive access to sales information from counties, including proprietary and hard-to-obtain lists.</p>
                 <p><em>Please note that FreeForeclosureList.net is currently in its prototype stage. Expect significant enhancements and updates in the coming months and weeks as we strive to provide you with an unparalleled user experience.</em></p>
               </div>
+              {/* Auction Parameters table moved to Auctions page */}
             </main>
             <footer className="footer">
               <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
@@ -138,6 +141,7 @@ function App() {
         <Route path="/orange" element={<OrangeCounty />} />
         <Route path="/osceola" element={<OsceolaCounty />} />
         <Route path="/seminole" element={<SeminoleCounty />} />
+  <Route path="/auctions" element={<AuctionsPanel />} />
       </Routes>
     </Router>
   );
