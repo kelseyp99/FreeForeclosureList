@@ -10,7 +10,7 @@ import GoogleAuthButton from "./GoogleAuthButton";
 import "./App.css";
 
 // SalesMenu: Head menu item for Sales that toggles the counties menu
-function SalesMenu({ onSelectReport }) {
+function AuctionsMenu({ onSelectReport }) {
   const [open, setOpen] = useState(false);
   return (
     <div style={{ width: '100%' }}>
@@ -32,12 +32,12 @@ function SalesMenu({ onSelectReport }) {
           transition: 'box-shadow 0.2s'
         }}
         aria-expanded={open}
-        aria-controls="sales-dropdown"
+        aria-controls="auctions-dropdown"
       >
-        Sales {open ? '▲' : '▼'}
+        Auctions {open ? '▲' : '▼'}
       </button>
       {open && (
-        <div id="sales-dropdown" style={{
+        <div id="auctions-dropdown" style={{
           maxHeight: 340,
           overflowY: 'auto',
           background: '#fffbe6',
@@ -84,7 +84,7 @@ function Home() {
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, width: '100%' }}>
             <a href="/" style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}>Home</a>
             <a href="/auctions" style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}>Auction Parameters</a>
-            <SalesMenu onSelectReport={(county, saleType) => {
+            <AuctionsMenu onSelectReport={(county, saleType) => {
               setSelectedCounty(county);
               setSelectedSaleType(saleType === 'UiPath' ? 'foreclosure' : 'taxdeed');
             }} />
@@ -159,7 +159,7 @@ function App() {
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, width: '100%' }}>
             <a href="/" style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}>Home</a>
             <a href="/auctions" style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}>Auction Parameters</a>
-            <SalesMenu onSelectReport={(county, saleType) => {
+            <AuctionsMenu onSelectReport={(county, saleType) => {
               setSelectedCounty(county);
               setSelectedSaleType(saleType === 'UiPath' ? 'foreclosure' : 'taxdeed');
             }} />
