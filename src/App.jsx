@@ -1,15 +1,60 @@
 
 
-import React from "react";
+import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-
-
 import FloridaCountiesSidebar from "./components/FloridaCountiesSidebar";
 import AuctionsPanel from "./pages/AuctionsPanel";
 import Header from "./Header";
 import reactLogo from "./assets/react.svg";
 import GoogleAuthButton from "./GoogleAuthButton";
 import "./App.css";
+
+// SalesMenu: Head menu item for Sales that toggles the counties menu
+function SalesMenu({ onSelectReport }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ width: '100%' }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          width: '100%',
+          background: '#f7c873',
+          color: '#7a5c1c',
+          fontWeight: 600,
+          border: '1px solid #e0b24d',
+          borderRadius: 6,
+          padding: '8px 10px',
+          cursor: 'pointer',
+          marginBottom: 4,
+          fontSize: 16,
+          textAlign: 'left',
+          boxShadow: open ? '0 2px 8px #f7c87355' : 'none',
+          transition: 'box-shadow 0.2s'
+        }}
+        aria-expanded={open}
+        aria-controls="sales-dropdown"
+      >
+        Sales {open ? '▲' : '▼'}
+      </button>
+      {open && (
+        <div id="sales-dropdown" style={{
+          maxHeight: 340,
+          overflowY: 'auto',
+          background: '#fffbe6',
+          border: '1px solid #f7c873',
+          borderRadius: 6,
+          boxShadow: '0 2px 12px #f7c87333',
+          marginTop: 2,
+          padding: '4px 0',
+          zIndex: 10,
+          position: 'relative',
+        }}>
+          <FloridaCountiesSidebar onSelectReport={onSelectReport} />
+        </div>
+      )}
+    </div>
+  );
+}
 
 // List of all Florida counties (alphabetical, no 'County' in label)
 const FLORIDA_COUNTIES = [
@@ -36,17 +81,20 @@ function Home() {
       <Header />
       <div className="container" style={{ display: 'flex', minHeight: '100vh' }}>
         <aside style={{ minWidth: 220, maxWidth: 280, background: '#f7f7f7', padding: '32px 8px 16px 8px', boxShadow: '2px 0 8px #eee', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <FloridaCountiesSidebar
-            onSelectReport={(county, saleType) => {
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, width: '100%' }}>
+            <a href="/" style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}>Home</a>
+            <a href="/auctions" style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}>Auction Parameters</a>
+            <SalesMenu onSelectReport={(county, saleType) => {
               setSelectedCounty(county);
               setSelectedSaleType(saleType === 'UiPath' ? 'foreclosure' : 'taxdeed');
-            }}
-          />
+            }} />
+          </nav>
           {/* AdSense Ad below menu */}
           <div style={{ width: '100%', minWidth: 100, height: 120, background: '#f7f7f7', border: '1px solid #eee', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#aaa', marginTop: 16 }}>
             AdSense Ad (Sidebar)
           </div>
         </aside>
+
         <div style={{ flex: 1, display: 'flex', flexDirection: 'row' }}>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <main className="main-content" style={{ padding: '40px 32px 0 32px', flex: 1 }}>
@@ -108,12 +156,14 @@ function App() {
       <Header />
       <div className="container" style={{ display: 'flex', minHeight: '100vh' }}>
         <aside style={{ minWidth: 220, maxWidth: 280, background: '#f7f7f7', padding: '32px 8px 16px 8px', boxShadow: '2px 0 8px #eee', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <FloridaCountiesSidebar
-            onSelectReport={(county, saleType) => {
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, width: '100%' }}>
+            <a href="/" style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}>Home</a>
+            <a href="/auctions" style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}>Auction Parameters</a>
+            <SalesMenu onSelectReport={(county, saleType) => {
               setSelectedCounty(county);
               setSelectedSaleType(saleType === 'UiPath' ? 'foreclosure' : 'taxdeed');
-            }}
-          />
+            }} />
+          </nav>
           {/* AdSense Ad below menu */}
           <div style={{ width: '100%', minWidth: 100, height: 120, background: '#f7f7f7', border: '1px solid #eee', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#aaa', marginTop: 16 }}>
             AdSense Ad (Sidebar)
