@@ -1,12 +1,10 @@
+
 import React from "react";
-import Header from "../Header";
 import AuctionParametersPage from "./AuctionParameters";
 
 export default function AuctionsPanel() {
   return (
-    <>
-      <Header />
-  <div className="container" style={{ display: 'flex', minHeight: '100vh', width: '100vw' }}>
+    <div className="container" style={{ display: 'flex', minHeight: '100vh', width: '100vw' }}>
         <aside style={{
           minWidth: 110,
           maxWidth: 180,
@@ -53,6 +51,5 @@ export default function AuctionsPanel() {
           </footer>
         </div>
       </div>
-    </>
   );
 }

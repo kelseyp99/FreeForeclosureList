@@ -45,7 +45,20 @@ export default function FloridaCountiesSidebar({ onSelectReport }) {
 
   return (
     <nav style={{ width: 280, background: '#f7f7f7', padding: '32px 16px 16px 16px', boxShadow: '2px 0 8px #eee', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-      <h2 style={{ fontSize: 20, marginBottom: 16 }}>Florida Counties</h2>
+      <h2 style={{
+        fontSize: 20,
+        marginBottom: 16,
+        background: '#f7c873',
+        color: '#7a5c1c',
+        padding: '8px 12px',
+        borderRadius: 6,
+        boxShadow: '0 1px 4px #f7c87333',
+        letterSpacing: 0.5,
+        width: '100%',
+        textAlign: 'left',
+      }}>
+        Florida Counties
+      </h2>
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, width: '100%' }}>
         {Object.keys(countySaleTypes).map((county) => (
           <li key={county} style={{ marginBottom: 8 }}>
