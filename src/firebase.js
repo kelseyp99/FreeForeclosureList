@@ -1,5 +1,7 @@
 // Firebase config and Google Auth logic for React
-import { initializeApp } from "firebase/app";
+
+import { initializeApp, getApps } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 
 const firebaseConfig = {
@@ -12,7 +14,9 @@ const firebaseConfig = {
   measurementId: "G-0F2LF33GM3"
 };
 
-const app = initializeApp(firebaseConfig);
+
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const provider = new GoogleAuthProvider();
 
