@@ -16,8 +16,18 @@
       }
       return dir === 'asc' ? (v1 > v2 ? 1 : v1 < v2 ? -1 : 0) : (v1 < v2 ? 1 : v1 > v2 ? -1 : 0);
     };
-    rows.sort(compare);
-    rows.forEach(row => tbody.appendChild(row));
+      // Only sort main data rows (skip .ffl-notes-row)
+      const allRows = Array.from(tbody.rows);
+      const dataRows = allRows.filter(row => !row.classList.contains('ffl-notes-row'));
+      dataRows.sort(compare);
+      // Re-attach each data row and its following .ffl-notes-row (if present)
+      dataRows.forEach(row => {
+        tbody.appendChild(row);
+        const next = row.nextElementSibling;
+        if (next && next.classList.contains('ffl-notes-row')) {
+          tbody.appendChild(next);
+        }
+      });
   }
 
   function detectType(val) {
