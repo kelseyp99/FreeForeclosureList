@@ -32,6 +32,19 @@ def filter_sales(sales, county, sales_type):
     return filtered
 
 def generate_html_report_from_sales(sales, output_path, county, sales_type):
+    # Load PA template for the county
+    import json
+    pa_template = None
+    pa_template_path = os.path.join(os.path.dirname(__file__), 'Legacy', 'foreclosureSales_clean.json')
+    try:
+        with open(pa_template_path, 'r', encoding='utf-8') as f:
+            pa_data = json.load(f)
+            for entry in pa_data:
+                if entry.get('County', '').strip().lower() == county.strip().lower():
+                    pa_template = entry.get('PA template', '').strip()
+                    break
+    except Exception as e:
+        pa_template = None
     # Define the desired field order and labels
     FIELD_ORDER = [
         ("Add Date", "Add Date"),
@@ -122,6 +135,13 @@ def generate_html_report_from_sales(sales, output_path, county, sales_type):
                     html += f'<td><a href="{maps_url}" target="_blank" rel="noopener noreferrer">{address}</a></td>'
                 else:
                     html += '<td></td>'
+            elif field == "Parcel ID":
+                parcel_id = str(cell).strip()
+                if pa_template and parcel_id and parcel_id.upper() != 'TIMESHARE':
+                    pa_url = pa_template.replace('<<PID>>', parcel_id)
+                    html += f'<td><a href="{pa_url}" target="_blank" rel="noopener noreferrer">{parcel_id}</a></td>'
+                else:
+                    html += f'<td>{parcel_id}</td>'
             elif field in ("Final Judgment", "Opening Bid", "AssessedValue"):
                 html += f'<td>{format_currency(cell)}</td>'
             else:
