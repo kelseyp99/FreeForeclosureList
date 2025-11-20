@@ -1,12 +1,16 @@
 import csv
+
 import random
 from datetime import datetime
 import firebase_admin
 from firebase_admin import credentials, firestore
+import os
+import sys
 
 # Path to your Firebase service account key
 SERVICE_ACCOUNT_PATH = 'backend/foreclosure-15f09-firebase-adminsdk-fbsvc-0fd54751e3.json'
-CSV_PATH = 'backend/Legacy/QuickSearch.csv'
+# Default CSV path, can be overridden by CLI arg
+CSV_PATH = sys.argv[1] if len(sys.argv) > 1 else 'backend/Legacy/QuickSearch.csv'
 
 # Initialize Firebase Admin
 if not firebase_admin._apps:
@@ -32,9 +36,32 @@ FIELD_MAP = {
     'My Bid': 'My Bid',
 }
 
-# Add mock fields for demonstration
+
+
+# Infer sales type from filename
+def infer_sales_type_from_filename(filename):
+    fname = os.path.basename(filename).lower()
+    if 'foreclosure' in fname:
+        return 'Foreclosure'
+    elif 'taxdeed' in fname or 'tax_deed' in fname or 'tax-deed' in fname:
+        return 'Tax Deed'
+    else:
+        return 'Unknown'
+
+# Infer county from filename (before first dash or underscore)
+def infer_county_from_filename(filename):
+    fname = os.path.basename(filename)
+    # Split on dash or underscore, take first part
+    for sep in ['-', '_']:
+        if sep in fname:
+            return fname.split(sep)[0].strip().title()
+    return 'Unknown'
+
+SALES_TYPE = infer_sales_type_from_filename(CSV_PATH)
+COUNTY = infer_county_from_filename(CSV_PATH)
+
 MOCK_FIELDS = {
-    'Sales Type': lambda row: 'Foreclosure',
+    'Sales Type': lambda row: SALES_TYPE,
     'notes': lambda row: 'Mock processed',
     'Timestamp': lambda row: datetime.now().isoformat(),
     'Telegram': lambda row: f'https://t.me/mock/{random.randint(1000,9999)}',
@@ -44,6 +71,9 @@ MOCK_FIELDS = {
 }
 
 def process_and_upload_sales():
+    print(f"Processing file: {CSV_PATH}")
+    print(f"Inferred Sales Type: {SALES_TYPE}")
+    print(f"Inferred County: {COUNTY}")
     with open(CSV_PATH, newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
@@ -53,8 +83,10 @@ def process_and_upload_sales():
             # Add mock/demo fields
             for k, v in MOCK_FIELDS.items():
                 sale[k] = v(row)
+            # Add inferred county
+            sale['County'] = COUNTY
             # Add any other fields you want to mock here
-            print(f"Uploading sale: {sale['Case Number']} ({sale['Address']})")
+            print(f"Uploading sale: {sale['Case Number']} ({sale['Address']}) | County: {sale['County']} | Sales Type: {sale['Sales Type']}")
             db.collection('sales').add(sale)
     print("All sales uploaded.")
 
