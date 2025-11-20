@@ -78,7 +78,9 @@
         notesBtn.style.padding = '2px 8px';
         notesBtn.style.cursor = 'pointer';
         // Set tooltip to current note (if any)
-        notesBtn.title = localStorage.getItem('ffl_note_' + caseNum) || 'Add note';
+  notesBtn.title = localStorage.getItem('ffl_note_' + caseNum) || 'Add note';
+  // Style tooltip for better visibility
+  notesBtn.style.setProperty('color', '#155724'); // dark green
         row.cells[0].appendChild(notesBtn);
 
         // Insert expandable notes row after this row if not already present
@@ -141,7 +143,9 @@
             return 'Add value estimate';
           }
         }
-        valueBtn.title = getEstimateTooltip();
+  valueBtn.title = getEstimateTooltip();
+  // Style tooltip for better visibility
+  valueBtn.style.setProperty('color', '#155724'); // dark green
         row.cells[0].appendChild(valueBtn);
 
         // Helper to get Final Judgment value from row
@@ -354,9 +358,37 @@
         row.style.display = hide ? 'none' : '';
       });
     }
-    timeshareBox.addEventListener('change', applyFilters);
-    blankBox.addEventListener('change', applyFilters);
-    statusSelect.addEventListener('change', applyFilters);
+    // --- Persist filter state in localStorage ---
+    // Keys
+    const LS_KEY_TIMESHARE = 'ffl_filter_timeshare';
+    const LS_KEY_BLANK = 'ffl_filter_blank';
+    const LS_KEY_STATUS = 'ffl_filter_status';
+
+    // Restore state
+    timeshareBox.checked = localStorage.getItem(LS_KEY_TIMESHARE) === '1';
+    blankBox.checked = localStorage.getItem(LS_KEY_BLANK) === '1';
+    const savedStatuses = JSON.parse(localStorage.getItem(LS_KEY_STATUS) || '[]');
+    Array.from(statusSelect.options).forEach(opt => {
+      opt.selected = savedStatuses.includes(opt.value);
+    });
+
+    // Save state on change
+    timeshareBox.addEventListener('change', function() {
+      localStorage.setItem(LS_KEY_TIMESHARE, timeshareBox.checked ? '1' : '0');
+      applyFilters();
+    });
+    blankBox.addEventListener('change', function() {
+      localStorage.setItem(LS_KEY_BLANK, blankBox.checked ? '1' : '0');
+      applyFilters();
+    });
+    statusSelect.addEventListener('change', function() {
+      const selected = Array.from(statusSelect.selectedOptions).map(opt => opt.value);
+      localStorage.setItem(LS_KEY_STATUS, JSON.stringify(selected));
+      applyFilters();
+    });
+
+    // Initial filter application
+    applyFilters();
   }
 
   document.addEventListener('DOMContentLoaded', function() {
