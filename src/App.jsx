@@ -77,38 +77,39 @@ function App() {
               <Routes>
                 <Route path="/auctions" element={<AuctionsPanel />} />
                 <Route path="/" element={
-                  <div style={{ maxWidth: 900 }}>
-                    <strong>Hello. We're FreeForeclosureList.net</strong>
-                    <p>Welcome to FreeForeclosureList.net, your premier destination for accessing comprehensive real estate distressed property listings. Powered by cutting-edge AI and Robotic Process Automation, we revolutionize the way you explore foreclosure properties. Unlike traditional county foreclosure lists, we go above and beyond by curating additional insights sourced from the web, providing you with a one-stop solution for all your real estate investment needs.</p>
-                    <p>Understanding the demands of modern investors, we offer invaluable features such as direct links to various real estate platforms, county property appraisers, and clerks of court. Our platform delivers more than just basic information; we provide estimated property values, judgment amounts for foreclosure cases, and opening bid amounts for Tax Deed sales. This empowers you to gauge potential equity and focus your efforts efficiently. By identifying properties where lenders are likely to halt bidding at the judgment amount, we save you valuable time. Moreover, you may discover opportunities to connect with property owners who owe less than the judgment amount, opening avenues for direct purchase.</p>
-                    <p>In addition to our comprehensive foreclosure data, we also offer exclusive access to sales information from counties, including proprietary and hard-to-obtain lists.</p>
-                    <p><em>Please note that FreeForeclosureList.net is currently in its prototype stage. Expect significant enhancements and updates in the coming months and weeks as we strive to provide you with an unparalleled user experience.</em></p>
-                    {reportSrc && (
-                      <div style={{ marginTop: 32, position: 'relative' }}>
-                        <h3>{selectedCounty} County {selectedSaleType === 'foreclosure' ? 'Foreclosure' : 'Tax Deed'} Report</h3>
-                        <iframe
-                          src={reportSrc}
-                          title="County Sales Report"
-                          style={{ width: '100%', minHeight: 600, border: '1px solid #ccc', borderRadius: 8 }}
-                        />
-                        {/* Debug overlay for iframe src */}
-                        <div style={{
-                          position: 'absolute',
-                          top: 0,
-                          right: 0,
-                          background: 'rgba(255,255,0,0.85)',
-                          color: '#222',
-                          padding: '4px 10px',
-                          fontSize: 13,
-                          borderBottomLeftRadius: 8,
-                          zIndex: 10,
-                          pointerEvents: 'none',
-                        }}>
-                          <strong>iframe src:</strong> {reportSrc}
-                        </div>
+                  reportSrc ? (
+                    <div style={{ maxWidth: 900, marginTop: 32, position: 'relative' }}>
+                      <h3>{selectedCounty} County {selectedSaleType === 'foreclosure' ? 'Foreclosure' : 'Tax Deed'} Report</h3>
+                      <iframe
+                        src={reportSrc}
+                        title="County Sales Report"
+                        style={{ width: '100%', minHeight: 600, border: '1px solid #ccc', borderRadius: 8 }}
+                      />
+                      {/* Debug overlay for iframe src */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        background: 'rgba(255,255,0,0.85)',
+                        color: '#222',
+                        padding: '4px 10px',
+                        fontSize: 13,
+                        borderBottomLeftRadius: 8,
+                        zIndex: 10,
+                        pointerEvents: 'none',
+                      }}>
+                        <strong>iframe src:</strong> {reportSrc}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div style={{ maxWidth: 900 }}>
+                      <strong>Hello. We're FreeForeclosureList.net</strong>
+                      <p>Welcome to FreeForeclosureList.net, your premier destination for accessing comprehensive real estate distressed property listings. Powered by cutting-edge AI and Robotic Process Automation, we revolutionize the way you explore foreclosure properties. Unlike traditional county foreclosure lists, we go above and beyond by curating additional insights sourced from the web, providing you with a one-stop solution for all your real estate investment needs.</p>
+                      <p>Understanding the demands of modern investors, we offer invaluable features such as direct links to various real estate platforms, county property appraisers, and clerks of court. Our platform delivers more than just basic information; we provide estimated property values, judgment amounts for foreclosure cases, and opening bid amounts for Tax Deed sales. This empowers you to gauge potential equity and focus your efforts efficiently. By identifying properties where lenders are likely to halt bidding at the judgment amount, we save you valuable time. Moreover, you may discover opportunities to connect with property owners who owe less than the judgment amount, opening avenues for direct purchase.</p>
+                      <p>In addition to our comprehensive foreclosure data, we also offer exclusive access to sales information from counties, including proprietary and hard-to-obtain lists.</p>
+                      <p><em>Please note that FreeForeclosureList.net is currently in its prototype stage. Expect significant enhancements and updates in the coming months and weeks as we strive to provide you with an unparalleled user experience.</em></p>
+                    </div>
+                  )
                 } />
                 {/* Removed redundant Pasco route. All report rendering is handled by main panel. */}
               </Routes>
