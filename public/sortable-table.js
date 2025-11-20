@@ -36,28 +36,82 @@
     });
     if (caseNumIdx === -1) return;
 
-    // Insert checkboxes in each row (if not already present)
-    Array.from(table.tBodies[0].rows).forEach(row => {
-      if (row.cells[0].querySelector('input[type="checkbox"]')) return;
-      // Case Number is now shifted by 1 due to new checkbox column
-      const caseNum = row.cells[caseNumIdx + 1]?.textContent.trim();
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.className = 'favorite-checkbox';
-      cb.title = 'Mark as favorite';
-      // Restore checked state from localStorage
-      const checked = localStorage.getItem('ffl_fav_' + caseNum) === '1';
-      cb.checked = checked;
-      cb.addEventListener('change', function() {
-        if (cb.checked) {
-          localStorage.setItem('ffl_fav_' + caseNum, '1');
-        } else {
-          localStorage.removeItem('ffl_fav_' + caseNum);
+    // Insert checkboxes and Notes button in each row (if not already present)
+    Array.from(table.tBodies[0].rows).forEach((row, idx) => {
+      if (!row.cells[0].querySelector('input[type="checkbox"]')) {
+        // Case Number is now shifted by 1 due to new checkbox column
+        const caseNum = row.cells[caseNumIdx + 1]?.textContent.trim();
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'favorite-checkbox';
+        cb.title = 'Mark as favorite';
+        // Restore checked state from localStorage
+        const checked = localStorage.getItem('ffl_fav_' + caseNum) === '1';
+        cb.checked = checked;
+        cb.addEventListener('change', function() {
+          if (cb.checked) {
+            localStorage.setItem('ffl_fav_' + caseNum, '1');
+          } else {
+            localStorage.removeItem('ffl_fav_' + caseNum);
+          }
+        });
+        row.cells[0].appendChild(cb);
+      }
+      // Add Notes button if not already present
+      if (!row.querySelector('.ffl-notes-btn')) {
+        const caseNum = row.cells[caseNumIdx + 1]?.textContent.trim();
+        const notesBtn = document.createElement('button');
+        notesBtn.textContent = 'Notes';
+        notesBtn.className = 'ffl-notes-btn';
+        notesBtn.style.marginLeft = '6px';
+        notesBtn.style.fontSize = '0.95em';
+        notesBtn.style.padding = '2px 8px';
+        notesBtn.style.cursor = 'pointer';
+        // Set tooltip to current note (if any)
+        notesBtn.title = localStorage.getItem('ffl_note_' + caseNum) || 'Add note';
+        row.cells[0].appendChild(notesBtn);
+
+        // Insert expandable notes row after this row if not already present
+        let nextRow = row.nextElementSibling;
+        if (!nextRow || !nextRow.classList.contains('ffl-notes-row')) {
+          const notesRow = document.createElement('tr');
+          notesRow.className = 'ffl-notes-row';
+          notesRow.style.display = 'none';
+          const notesTd = document.createElement('td');
+          notesTd.colSpan = row.cells.length;
+          notesTd.style.background = '#f9f9f9';
+          notesTd.style.borderTop = '1px solid #ddd';
+          notesTd.style.padding = '10px 16px';
+          const notesArea = document.createElement('textarea');
+          notesArea.rows = 3;
+          notesArea.style.width = '98%';
+          notesArea.style.fontSize = '1em';
+          notesArea.placeholder = 'Notes about this property...';
+          notesArea.value = localStorage.getItem('ffl_note_' + caseNum) || '';
+          notesArea.addEventListener('input', function() {
+            localStorage.setItem('ffl_note_' + caseNum, notesArea.value);
+            // Update tooltip on Notes button
+            notesBtn.title = notesArea.value || 'Add note';
+          });
+          notesTd.appendChild(notesArea);
+          notesRow.appendChild(notesTd);
+          row.parentNode.insertBefore(notesRow, row.nextSibling);
+
+          // Toggle notes row on button click
+          notesBtn.addEventListener('click', function() {
+            notesRow.style.display = notesRow.style.display === 'none' ? '' : 'none';
+          });
         }
-      });
-      row.cells[0].appendChild(cb);
+        // Update tooltip on mouseenter (in case note changed elsewhere)
+        notesBtn.addEventListener('mouseenter', function() {
+          notesBtn.title = localStorage.getItem('ffl_note_' + caseNum) || 'Add note';
+        });
+      }
     });
 
+    // Remove notes column header if present
+    const notesTh = table.querySelector('thead th.ffl-notes-header');
+    if (notesTh) notesTh.remove();
     // Sorting
     ths.forEach((th, idx) => {
       let dir = 'asc';
