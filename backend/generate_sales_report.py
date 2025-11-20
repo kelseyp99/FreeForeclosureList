@@ -32,6 +32,23 @@ def filter_sales(sales, county, sales_type):
     return filtered
 
 def generate_html_report_from_sales(sales, output_path, county, sales_type):
+    # Define the desired field order and labels
+    FIELD_ORDER = [
+        ("Add Date", "Add Date"),
+        ("Address", "Address"),
+        ("AssessedValue", "Assessed Value"),
+        ("Case Number", "Case Number"),
+        ("Certificate Holder Name", "Certificate Holder Name"),
+        ("City", "City"),
+        ("Final Judgment", "Final Judgment"),
+        ("My Bid", "My Bid"),
+        ("Opening Bid", "Opening Bid"),
+        ("Parcel ID", "Parcel ID"),
+        ("PlaintiffMaxBid", "Plaintiff Max Bid"),
+        ("Sale Date", "Sale Date"),
+        ("Status", "Status"),
+        ("Zip", "Zip"),
+    ]
     html = f'''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -58,7 +75,7 @@ def generate_html_report_from_sales(sales, output_path, county, sales_type):
         }}
         .sticky-table-header th {{
             position: sticky;
-            top: 2.2em; /* reduced offset so header is closer to the top */
+            top: 2.2em;
             background: #f4f4f4;
             z-index: 99;
         }}
@@ -73,14 +90,13 @@ def generate_html_report_from_sales(sales, output_path, county, sales_type):
       <table>
         <thead class="sticky-table-header">
             <tr>'''
-    if sales:
-        for field in sales[0].keys():
-            html += f'<th>{field}</th>'
+    for field, label in FIELD_ORDER:
+        html += f'<th>{label}</th>'
     html += '</tr>\n        </thead>\n        <tbody>\n'
     for row in sales:
         html += '<tr>'
-        for value in row.values():
-            html += f'<td>{value}</td>'
+        for field, _ in FIELD_ORDER:
+            html += f'<td>{row.get(field, "")}</td>'
         html += '</tr>\n'
     html += '        </tbody>\n      </table>\n    </div>\n</body>\n</html>'
     with open(output_path, 'w', encoding='utf-8') as f:

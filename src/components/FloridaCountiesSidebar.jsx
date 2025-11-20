@@ -39,7 +39,11 @@ export default function FloridaCountiesSidebar({ onSelectReport }) {
 
   function handleSelect(county, saleType) {
     if (onSelectReport) {
-      onSelectReport(county, saleType);
+      // Map UiPath/UiPathTD to foreclosure/taxdeed for App.jsx
+      let mappedType = saleType;
+      if (saleType === 'UiPath') mappedType = 'foreclosure';
+      else if (saleType === 'UiPathTD') mappedType = 'taxdeed';
+      onSelectReport(county, mappedType);
     }
   }
 

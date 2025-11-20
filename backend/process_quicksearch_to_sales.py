@@ -18,7 +18,7 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-# Map CSV columns to Firestore fields (add more as needed)
+# Map CSV columns (with stripped spaces) to Firestore fields
 FIELD_MAP = {
     'Sale Date': 'Sale Date',
     'Add Date': 'Add Date',
@@ -27,12 +27,12 @@ FIELD_MAP = {
     'Final Judgment': 'Final Judgment',
     'Opening Bid': 'Opening Bid',
     'Assessed Value': 'AssessedValue',
-    'Certificate Holder Name': 'Plaintiff Name',
+    'Certificate Holder Name': 'Certificate Holder Name',
     'Plaintiff Max Bid': 'PlaintiffMaxBid',
     'Address': 'Address',
     'City': 'City',
     'Zip': 'Zip',
-    'Parcel ID': 'PID',
+    'Parcel ID': 'Parcel ID',
     'My Bid': 'My Bid',
 }
 
@@ -62,12 +62,7 @@ COUNTY = infer_county_from_filename(CSV_PATH)
 
 MOCK_FIELDS = {
     'Sales Type': lambda row: SALES_TYPE,
-    'notes': lambda row: 'Mock processed',
     'Timestamp': lambda row: datetime.now().isoformat(),
-    'Telegram': lambda row: f'https://t.me/mock/{random.randint(1000,9999)}',
-    'Zillo': lambda row: f'https://zillow.com/homedetails/{random.randint(100000,999999)}',
-    'Realtor.com': lambda row: f'https://realtor.com/realestateandhomes-detail/{random.randint(100000,999999)}',
-    'RedFin': lambda row: f'https://redfin.com/FL/{row.get("City", "")}/{random.randint(100000,999999)}',
 }
 
 def process_and_upload_sales():
@@ -76,17 +71,20 @@ def process_and_upload_sales():
     print(f"Inferred County: {COUNTY}")
     with open(CSV_PATH, newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
+        # Normalize CSV headers by stripping spaces
+        reader.fieldnames = [h.strip() for h in reader.fieldnames]
         for row in reader:
+            # Normalize row keys by stripping spaces
+            row = {k.strip(): v for k, v in row.items()}
             sale = {}
             for csv_col, fs_field in FIELD_MAP.items():
-                sale[fs_field] = row.get(csv_col, '').strip()
-            # Add mock/demo fields
+                value = row.get(csv_col, '').strip()
+                sale[fs_field] = value
+                sale[csv_col] = value
             for k, v in MOCK_FIELDS.items():
                 sale[k] = v(row)
-            # Add inferred county
             sale['County'] = COUNTY
-            # Add any other fields you want to mock here
-            print(f"Uploading sale: {sale['Case Number']} ({sale['Address']}) | County: {sale['County']} | Sales Type: {sale['Sales Type']}")
+            print(f"Uploading sale: {sale.get('Case Number', '')} ({sale.get('Address', '')}) | County: {sale['County']} | Sales Type: {sale['Sales Type']}")
             db.collection('sales').add(sale)
     print("All sales uploaded.")
 

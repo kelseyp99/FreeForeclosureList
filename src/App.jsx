@@ -92,12 +92,11 @@ function App() {
                 <Route path="/auctions" element={<AuctionsPanel />} />
                 <Route path="/" element={
                   reportSrc ? (
-                    <div style={{ maxWidth: 900, marginTop: 32, position: 'relative' }}>
-                      <h3>{selectedCounty} County {selectedSaleType === 'foreclosure' ? 'Foreclosure' : 'Tax Deed'} Report</h3>
+                    <div style={{ maxWidth: 1700, marginTop: 32, position: 'relative' }}>
                       <iframe
                         src={reportSrc}
                         title="County Sales Report"
-                        style={{ width: '100%', minHeight: 600, border: '1px solid #ccc', borderRadius: 8 }}
+                        style={{ width: '100%', minHeight: 1200, border: '1px solid #ccc', borderRadius: 8 }}
                       />
                       {/* Debug overlay for iframe src */}
                       <div style={{
