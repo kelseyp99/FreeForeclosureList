@@ -90,13 +90,41 @@ def generate_html_report_from_sales(sales, output_path, county, sales_type):
       <table>
         <thead class="sticky-table-header">
             <tr>'''
+    html += '<th style="width:36px">★</th>'  # Checkbox column
     for field, label in FIELD_ORDER:
         html += f'<th>{label}</th>'
     html += '</tr>\n        </thead>\n        <tbody>\n'
+    def format_currency(val):
+        try:
+            num = float(str(val).replace(',', '').replace('$', ''))
+            if num == 0:
+                return '0'
+            return f"${num:,.2f}"
+        except Exception:
+            return val
+
     for row in sales:
-        html += '<tr>'
+        html += '<tr><td></td>'  # Always prepend checkbox column
         for field, _ in FIELD_ORDER:
-            html += f'<td>{row.get(field, "")}</td>'
+            cell = row.get(field, "")
+            if field == "Address":
+                address = str(row.get("Address", "")).strip()
+                city = str(row.get("City", "")).strip()
+                zip_code = str(row.get("Zip", "")).strip()
+                if address:
+                    q = address
+                    if city:
+                        q += f", {city}"
+                    if zip_code:
+                        q += f" {zip_code}"
+                    maps_url = f"https://www.google.com/maps/search/?api=1&query={q.replace(' ', '+')}"
+                    html += f'<td><a href="{maps_url}" target="_blank" rel="noopener noreferrer">{address}</a></td>'
+                else:
+                    html += '<td></td>'
+            elif field in ("Final Judgment", "Opening Bid", "AssessedValue"):
+                html += f'<td>{format_currency(cell)}</td>'
+            else:
+                html += f'<td>{cell}</td>'
         html += '</tr>\n'
     html += '        </tbody>\n      </table>\n    </div>\n</body>\n</html>'
     with open(output_path, 'w', encoding='utf-8') as f:
