@@ -107,6 +107,137 @@
           notesBtn.title = localStorage.getItem('ffl_note_' + caseNum) || 'Add note';
         });
       }
+
+      // Add Value Estimate button if not already present
+      if (!row.querySelector('.ffl-value-btn')) {
+        const caseNum = row.cells[caseNumIdx + 1]?.textContent.trim();
+        const valueBtn = document.createElement('button');
+        valueBtn.textContent = 'Value Estimate';
+        valueBtn.className = 'ffl-value-btn';
+        valueBtn.style.marginLeft = '6px';
+        valueBtn.style.fontSize = '0.95em';
+        valueBtn.style.padding = '2px 8px';
+        valueBtn.style.cursor = 'pointer';
+        // Set tooltip to current estimate (if any)
+        function getEstimateTooltip() {
+          const est = localStorage.getItem('ffl_est_' + caseNum);
+          const fj = getFinalJudgment(row);
+          if (est && fj !== null) {
+            const diff = est - fj;
+            return `Estimate: $${Number(est).toLocaleString()}\nFinal Judgment: $${fj.toLocaleString()}\nDifference: $${diff.toLocaleString()}`;
+          } else if (est) {
+            return `Estimate: $${Number(est).toLocaleString()}`;
+          } else {
+            return 'Add value estimate';
+          }
+        }
+        valueBtn.title = getEstimateTooltip();
+        row.cells[0].appendChild(valueBtn);
+
+        // Helper to get Final Judgment value from row
+        function getFinalJudgment(row) {
+          // Find Final Judgment column index
+          let fjIdx = -1;
+          Array.from(row.parentNode.parentNode.querySelectorAll('thead th')).forEach((th, idx) => {
+            if (th.textContent.trim().toLowerCase() === 'final judgment') fjIdx = idx;
+          });
+          if (fjIdx === -1) return null;
+          const val = row.cells[fjIdx]?.textContent.replace(/[^\d.\-]/g, '');
+          return val ? parseFloat(val) : null;
+        }
+
+        // Popup for entering estimate
+        valueBtn.addEventListener('click', function() {
+          // Remove any existing modal
+          const oldModal = document.getElementById('value-estimate-modal');
+          if (oldModal) oldModal.remove();
+
+          const modal = document.createElement('div');
+          modal.id = 'value-estimate-modal';
+          modal.style.position = 'fixed';
+          modal.style.top = '50%';
+          modal.style.left = '50%';
+          modal.style.transform = 'translate(-50%, -50%)';
+          modal.style.background = '#fff';
+          modal.style.border = '1px solid #ccc';
+          modal.style.boxShadow = '0 2px 12px rgba(0,0,0,0.2)';
+          modal.style.zIndex = 10000;
+          modal.style.padding = '20px';
+          modal.style.minWidth = '320px';
+          modal.style.borderRadius = '8px';
+
+          const label = document.createElement('div');
+          label.textContent = `Value Estimate for Case: ${caseNum}`;
+          label.style.marginBottom = '8px';
+          modal.appendChild(label);
+
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.placeholder = 'Enter your estimate ($)';
+          input.style.width = '100%';
+          input.style.fontSize = '1.1em';
+          input.style.marginBottom = '12px';
+          input.value = localStorage.getItem('ffl_est_' + caseNum) || '';
+          modal.appendChild(input);
+
+          // Show Final Judgment and difference
+          const fj = getFinalJudgment(row);
+          const fjDiv = document.createElement('div');
+          if (fj !== null) {
+            fjDiv.textContent = `Final Judgment: $${fj.toLocaleString()}`;
+            fjDiv.style.marginBottom = '8px';
+            modal.appendChild(fjDiv);
+          }
+
+          const diffDiv = document.createElement('div');
+          diffDiv.style.marginBottom = '8px';
+          modal.appendChild(diffDiv);
+
+          function updateDiff() {
+            const est = parseFloat(input.value);
+            if (!isNaN(est) && fj !== null) {
+              const diff = est - fj;
+              diffDiv.textContent = `Difference: $${diff.toLocaleString()}`;
+            } else {
+              diffDiv.textContent = '';
+            }
+          }
+          input.addEventListener('input', updateDiff);
+          updateDiff();
+
+          const btnRow = document.createElement('div');
+          btnRow.style.textAlign = 'right';
+
+          const saveBtn = document.createElement('button');
+          saveBtn.textContent = 'Save';
+          saveBtn.style.marginRight = '8px';
+          saveBtn.onclick = () => {
+            if (input.value) {
+              localStorage.setItem('ffl_est_' + caseNum, input.value);
+            } else {
+              localStorage.removeItem('ffl_est_' + caseNum);
+            }
+            valueBtn.title = getEstimateTooltip();
+            modal.remove();
+          };
+          btnRow.appendChild(saveBtn);
+
+          const cancelBtn = document.createElement('button');
+          cancelBtn.textContent = 'Cancel';
+          cancelBtn.onclick = () => modal.remove();
+          btnRow.appendChild(cancelBtn);
+
+          modal.appendChild(btnRow);
+
+          document.body.appendChild(modal);
+          input.focus();
+        });
+
+        // Update tooltip on mouseenter (in case value changed elsewhere)
+        valueBtn.addEventListener('mouseenter', function() {
+          valueBtn.title = getEstimateTooltip();
+        });
+      }
     });
 
     // Remove notes column header if present
