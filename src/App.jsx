@@ -1,6 +1,7 @@
 
 
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import FloridaCountiesSidebar from "./components/FloridaCountiesSidebar";
 import PascoCounty from "./pages/PascoCounty";
@@ -45,11 +46,13 @@ function App() {
   const [selectedCounty, setSelectedCounty] = useState("");
   const [selectedSaleType, setSelectedSaleType] = useState("");
   const reportSrc = selectedCounty && selectedSaleType
-    ? `/reports/${selectedCounty}_${selectedSaleType}.html`
+    ? `/reports/sales_report_${selectedCounty.toLowerCase().replace(/\s/g, "_")}_${selectedSaleType.toLowerCase().replace(/\s/g, "")}.html`
     : null;
+  console.log('APP STATE:', { selectedCounty, selectedSaleType, reportSrc });
 
+  const navigate = useNavigate();
   return (
-    <Router>
+    <>
       <Header />
       <div className="container" style={{ display: 'flex', minHeight: '100vh' }}>
         <aside style={{ minWidth: 220, maxWidth: 280, background: '#f7f7f7', padding: '32px 8px 16px 8px', boxShadow: '2px 0 8px #eee', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
@@ -57,8 +60,9 @@ function App() {
             <a href="/" style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}>Home</a>
             <a href="/auctions" style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}>Auction Parameters</a>
             <AuctionsMenu onSelectReport={(county, saleType) => {
+              console.log('SIDEBAR SELECT:', { county, saleType });
               setSelectedCounty(county);
-              setSelectedSaleType(saleType === 'UiPath' ? 'foreclosure' : 'taxdeed');
+              setSelectedSaleType(saleType);
             }} />
           </nav>
           {/* AdSense Ad below menu */}
@@ -80,23 +84,33 @@ function App() {
                     <p>In addition to our comprehensive foreclosure data, we also offer exclusive access to sales information from counties, including proprietary and hard-to-obtain lists.</p>
                     <p><em>Please note that FreeForeclosureList.net is currently in its prototype stage. Expect significant enhancements and updates in the coming months and weeks as we strive to provide you with an unparalleled user experience.</em></p>
                     {reportSrc && (
-                      <div style={{ marginTop: 32 }}>
+                      <div style={{ marginTop: 32, position: 'relative' }}>
                         <h3>{selectedCounty} County {selectedSaleType === 'foreclosure' ? 'Foreclosure' : 'Tax Deed'} Report</h3>
                         <iframe
                           src={reportSrc}
                           title="County Sales Report"
                           style={{ width: '100%', minHeight: 600, border: '1px solid #ccc', borderRadius: 8 }}
                         />
+                        {/* Debug overlay for iframe src */}
+                        <div style={{
+                          position: 'absolute',
+                          top: 0,
+                          right: 0,
+                          background: 'rgba(255,255,0,0.85)',
+                          color: '#222',
+                          padding: '4px 10px',
+                          fontSize: 13,
+                          borderBottomLeftRadius: 8,
+                          zIndex: 10,
+                          pointerEvents: 'none',
+                        }}>
+                          <strong>iframe src:</strong> {reportSrc}
+                        </div>
                       </div>
                     )}
                   </div>
                 } />
-                <Route path="/pasco" element={<PascoCounty 
-                  selectedCounty={selectedCounty}
-                  selectedSaleType={selectedSaleType}
-                  setSelectedCounty={setSelectedCounty}
-                  setSelectedSaleType={setSelectedSaleType}
-                />} />
+                {/* Removed redundant Pasco route. All report rendering is handled by main panel. */}
               </Routes>
             </main>
             <footer className="footer">
@@ -119,7 +133,7 @@ function App() {
           </div>
         </div>
       </div>
-    </Router>
+    </>
   );
 }
 
