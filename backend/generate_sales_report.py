@@ -27,7 +27,13 @@ def filter_sales(sales, county, sales_type):
     for row in sales:
         row_county = (row.get('County') or '').strip().lower()
         row_type = (row.get('Sales Type') or '').strip().lower()
+        parcel_id = (row.get('Parcel ID') or '').strip()
+        is_timeshare = (row.get('Certificate Holder Name') or '').strip().upper() == 'TIMESHARE' or (row.get('Parcel ID') or '').strip().upper() == 'TIMESHARE'
         if row_county == county.lower() and row_type == sales_type.lower():
+            if is_timeshare:
+                continue
+            if not parcel_id:
+                continue
             filtered.append(row)
     return filtered
 
@@ -82,11 +88,13 @@ def generate_html_report_from_sales(sales, output_path, county, sales_type):
         table {{ border-collapse: collapse; width: 100%; }}
         th, td {{ border: 1px solid #ccc; padding: 8px; text-align: left; }}
         tr:nth-child(even) {{ background: #fafafa; }}
+    .filter-note {{ color: #666; font-size: 0.95em; margin-bottom: 1em; }}
     </style>
 </head>
 <body>
     <div class="report-scroll-container">
       <div class="sticky-title"><strong>{county.title()} County {sales_type.title()} Report</strong><br><span style="font-weight: normal; font-size: 0.95em;">Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span></div>
+      <div class="filter-note">Filtered: Timeshares and rows with blank Parcel ID are excluded.</div>
       <table>
         <thead class="sticky-table-header">
             <tr>'''
