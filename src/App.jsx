@@ -32,7 +32,7 @@ function AuctionsMenu({ onSelectReport }) {
           textAlign: 'left',
         }}
       >
-        Sales
+        Auctions
       </button>
       {open && (
         <FloridaCountiesSidebar onSelectReport={onSelectReport} />
