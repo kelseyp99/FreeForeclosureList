@@ -58,7 +58,7 @@ def generate_html_report_from_sales(sales, output_path, county, sales_type):
         }}
         .sticky-table-header th {{
             position: sticky;
-            top: 3.5em; /* height of sticky title + margin */
+            top: 2.2em; /* reduced offset so header is closer to the top */
             background: #f4f4f4;
             z-index: 99;
         }}
