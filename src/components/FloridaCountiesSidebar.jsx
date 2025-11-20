@@ -11,6 +11,14 @@ const SALE_TYPE_LABELS = {
 export default function FloridaCountiesSidebar({ onSelectReport }) {
   const [params, setParams] = useState([]);
   const [expandedCounty, setExpandedCounty] = useState(null);
+  const [useMRU, setUseMRU] = useState(true);
+  const [mruList, setMRUList] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('mruCounties') || '[]');
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
     fetchParams();
@@ -19,8 +27,8 @@ export default function FloridaCountiesSidebar({ onSelectReport }) {
   async function fetchParams() {
     const querySnapshot = await getDocs(collection(db, "auction_parameters"));
     const data = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-  setParams(data);
-  console.log('Loaded auction_parameters:', data);
+    setParams(data);
+    console.log('Loaded auction_parameters:', data);
   }
 
   // Build menu structure: { county: ["UiPath", "UiPathTD"] }
@@ -38,6 +46,12 @@ export default function FloridaCountiesSidebar({ onSelectReport }) {
   }
 
   function handleSelect(county, saleType) {
+    // Update MRU list
+    setMRUList(prev => {
+      const next = [county, ...prev.filter(c => c !== county)].slice(0, 5);
+      localStorage.setItem('mruCounties', JSON.stringify(next));
+      return next;
+    });
     if (onSelectReport) {
       // Map UiPath/UiPathTD to foreclosure/taxdeed for App.jsx
       let mappedType = saleType;
@@ -46,6 +60,12 @@ export default function FloridaCountiesSidebar({ onSelectReport }) {
       onSelectReport(county, mappedType);
     }
   }
+
+  // Prepare sorted county list
+  let counties = Object.keys(countySaleTypes);
+  let mru = mruList.filter(c => counties.includes(c));
+  let rest = counties.filter(c => !mru.includes(c)).sort((a, b) => a.localeCompare(b));
+  let displayList = useMRU ? [...mru, ...rest] : counties.sort((a, b) => a.localeCompare(b));
 
   return (
     <nav style={{ width: 280, background: '#f7f7f7', padding: '32px 16px 16px 16px', boxShadow: '2px 0 8px #eee', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
@@ -63,8 +83,12 @@ export default function FloridaCountiesSidebar({ onSelectReport }) {
       }}>
         Florida Counties
       </h2>
+      <label style={{ marginBottom: 12, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <input type="checkbox" checked={useMRU} onChange={e => setUseMRU(e.target.checked)} />
+        Most Recently Used on Top
+      </label>
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, width: '100%' }}>
-        {Object.keys(countySaleTypes).map((county) => (
+        {displayList.map((county) => (
           <li key={county} style={{ marginBottom: 8 }}>
             <button
               style={{ background: 'none', border: 'none', color: '#222', cursor: 'pointer', padding: 0, fontWeight: 600, fontSize: 17, marginLeft: 4 }}
