@@ -56,7 +56,6 @@ function App() {
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, width: '100%' }}>
             <a href="/" style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}>Home</a>
             <a href="/auctions" style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}>Auction Parameters</a>
-            <a href="/pasco" style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}>Pasco County</a>
             <AuctionsMenu onSelectReport={(county, saleType) => {
               setSelectedCounty(county);
               setSelectedSaleType(saleType === 'UiPath' ? 'foreclosure' : 'taxdeed');
