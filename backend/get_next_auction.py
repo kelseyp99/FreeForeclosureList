@@ -1,6 +1,6 @@
-
 import json
 from datetime import datetime
+import sys
 
 JSON_PATH = 'backend/Legacy/foreclosureSales_clean.json'
 
@@ -53,12 +53,29 @@ def get_next_sale_for_county(county_name):
                 return None, None, row
     return None, None, None
 
-if __name__ == "__main__":
-    county = 'Pasco'
-    sale_type, sale_date, row = get_next_sale_for_county(county)
-    if sale_type:
-        print(f"Next sale for {county}: {sale_type} on {sale_date}")
-        for col in COLUMN_ORDER:
-            print(f"{col}: {row.get(col, '')}")
+def get_next_county_and_sale_type():
+    with open(JSON_PATH, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    soonest = None
+    soonest_type = None
+    soonest_county = None
+    soonest_date = None
+    for row in data:
+        county = row.get('County', '').strip()
+        fc_flag = str(row.get('UiPath', '')).strip().lower() == 'x'
+        td_flag = str(row.get('UiPathTD', '')).strip().lower() == 'x'
+        fc_date = parse_date(row.get('Foreclosure', '')) if fc_flag else None
+        td_date = parse_date(row.get('Tax Deed', '')) if td_flag else None
+        for sale_type, date in [('Foreclosure', fc_date), ('Tax Deed', td_date)]:
+            if date:
+                if soonest_date is None or date < soonest_date:
+                    soonest_date = date
+                    soonest_type = sale_type
+                    soonest_county = county
+    if soonest_county and soonest_type:
+        print(f"{soonest_county} {soonest_type}")
     else:
-        print(f"No upcoming sale found for {county}.")
+        print("")
+
+if __name__ == "__main__":
+    get_next_county_and_sale_type()
