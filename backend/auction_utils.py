@@ -158,6 +158,14 @@ def filter_sales(sales, county, sales_type):
             filtered.append(row)
     return filtered
 
+def generate_html_report_from_firestore(county, sales_type, output_path):
+    # Uses the global db object (already created at the top of your file)
+    sales_ref = db.collection('sales')
+    docs = sales_ref.stream()
+    sales = [doc.to_dict() for doc in docs]
+    filtered = filter_sales(sales, county, sales_type)
+    generate_html_report_from_sales(filtered, output_path, county, sales_type)
+
 def generate_html_report_from_sales(sales, output_path, county, sales_type):
     import os
     from datetime import datetime
@@ -290,15 +298,13 @@ def generate_html_report_from_sales(sales, output_path, county, sales_type):
         f.write(html)
     print(f'Report generated: {output_path}')
 
-# --- MAIN BLOCK FOR FUNCTION DISPATCH TESTING ---
-# --- MAIN BLOCK FOR FUNCTION DISPATCH TESTING ---
 if __name__ == "__main__":
     import sys
     import inspect
     import csv
     if len(sys.argv) < 2:
         print("Usage: python auction_utils.py <function_name> [args ...]")
-        print("Example: python auction_utils.py generate_html_report_from_sales")
+        print("Example: python auction_utils.py generate_html_report_from_firestore")
         sys.exit(1)
     func_name = sys.argv[1]
     func = globals().get(func_name)
@@ -322,6 +328,11 @@ if __name__ == "__main__":
             sales = list(reader)
         filtered = filter_sales(sales, county, sale_type)
         generate_html_report_from_sales(filtered, output_path, county, sale_type)
+    elif func_name == "generate_html_report_from_firestore":
+        county = "Orange"
+        sales_type = "Foreclosure"
+        output_path = "dist/reports/sales_report_orange_foreclosure.html"
+        generate_html_report_from_firestore(county, sales_type, output_path)
     else:
         # Pass all remaining args to the function
         result = func(*sys.argv[2:])
