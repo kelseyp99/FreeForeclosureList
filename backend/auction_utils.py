@@ -51,3 +51,41 @@ def process_quicksearch_to_auctions(csv_path, county, sale_type):
     param_doc = db.collection("auction_parameters").document(f"{county}_{sale_type}")
     param_doc.set({"last_update": datetime.datetime.utcnow()}, merge=True)
     return {"total": total, "written": written, "skipped": skipped, "county": county, "sale_type": sale_type, "date": date}
+
+    # --- NEXT SALE UTILS ---
+import json
+from datetime import datetime
+
+def parse_date(date_str):
+    try:
+        return datetime.strptime(date_str.strip(), '%m/%d/%Y')
+    except Exception:
+        return None
+
+def get_next_sale_for_county(county_name, json_path='backend/Legacy/foreclosureSales_clean.json'):
+    """
+    Returns (sale_type, sale_date, row) for the next sale for the given county.
+    sale_type is 'Foreclosure' or 'Tax Deed'.
+    sale_date is MM/DD/YYYY string or None.
+    row is the full dict from the JSON.
+    """
+    with open(json_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    for row in data:
+        if row.get('County', '').strip().lower() == county_name.strip().lower():
+            fc_flag = str(row.get('UiPath', '')).strip().lower() == 'x'
+            td_flag = str(row.get('UiPathTD', '')).strip().lower() == 'x'
+            fc_date = parse_date(row.get('Foreclosure', '')) if fc_flag else None
+            td_date = parse_date(row.get('Tax Deed', '')) if td_flag else None
+            if fc_date and td_date:
+                if fc_date <= td_date:
+                    return 'Foreclosure', fc_date.strftime('%m/%d/%Y'), row
+                else:
+                    return 'Tax Deed', td_date.strftime('%m/%d/%Y'), row
+            elif fc_date:
+                return 'Foreclosure', fc_date.strftime('%m/%d/%Y'), row
+            elif td_date:
+                return 'Tax Deed', td_date.strftime('%m/%d/%Y'), row
+            else:
+                return None, None, row
+    return None, None, None
