@@ -130,23 +130,59 @@ def get_next_sale_for_county_if_stale(county_name, sale_type, min_hours=0, json_
 
 def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dist/reports'):
     """
-    Copies the report HTML to the deploy directory and updates Firestore auction_parameters last_update.
-    After this, run `firebase deploy --only hosting` to push to Firebase Hosting.
+    Runs the build step, copies the report HTML to the Firebase Hosting dist directory,
+    updates Firestore auction_parameters last_update, and deploys to Firebase Hosting.
     """
     import shutil
     import datetime
     import os
-    dest_path = os.path.join(dest_dir, os.path.basename(report_path))
+    import subprocess
+
+    # 1. Run the build step
+    try:
+        build_result = subprocess.run(
+            ["npm", "run", "build"],
+            capture_output=True, text=True, check=True
+        )
+        build_output = build_result.stdout
+        build_error = build_result.stderr
+    except Exception as e:
+        build_output = ""
+        build_error = str(e)
+
+    # 2. Always copy to Firebase Hosting dist directory
+    firebase_dist_dir = os.path.join(os.path.dirname(__file__), '..', 'dist', 'reports')
+    if not os.path.exists(firebase_dist_dir):
+        os.makedirs(firebase_dist_dir)
+    dest_path = os.path.join(firebase_dist_dir, os.path.basename(report_path))
     if os.path.abspath(report_path) != os.path.abspath(dest_path):
-        if not os.path.exists(dest_dir):
-            os.makedirs(dest_dir)
         shutil.copy2(report_path, dest_path)
-    # Always update Firestore last_update as a nested field under the sale_type in the county document
+
+    # 3. Always update Firestore last_update as a nested field under the sale_type in the county document
     county_doc = db.collection("auction_parameters").document(county.lower())
     update_data = {f"{sale_type.lower()}.last_update": datetime.datetime.utcnow()}
     county_doc.set(update_data, merge=True)
-    # NOTE: You must still run `firebase deploy --only hosting` to upload to Firebase Hosting
-    return dest_path
+
+    # 4. Deploy to Firebase Hosting
+    try:
+        result = subprocess.run(
+            ["firebase", "deploy", "--only", "hosting"],
+            capture_output=True, text=True, check=True
+        )
+        deploy_output = result.stdout
+        deploy_error = result.stderr
+    except Exception as e:
+        deploy_output = ""
+        deploy_error = str(e)
+
+    return {
+        "build_output": build_output,
+        "build_error": build_error,
+        "copied_to": dest_path,
+        "firestore_updated": True,
+        "deploy_output": deploy_output,
+        "deploy_error": deploy_error
+    }
 
 
 def filter_sales(sales, county, sales_type):
@@ -303,15 +339,31 @@ if __name__ == "__main__":
     import inspect
     import csv
     if len(sys.argv) < 2:
-        print("Usage: python auction_utils.py <function_name> [args ...]")
-        print("Example: python auction_utils.py generate_html_report_from_firestore")
-        sys.exit(1)
+        # Default: run the test workflow
+        county = "Orange"
+        sale_type = "Foreclosure"
+        min_hours = 24
+        next_type, next_date, next_row = get_next_sale_for_county_if_stale(county, sale_type, min_hours)
+        print(f"Next sale for {county} ({sale_type}) if stale >{min_hours}h: {next_type}, {next_date}, {next_row}")
+        input("\nDownload the QuickSearch file for this county/sale_type and press Enter to continue...")
+        # 2. Process QuickSearch and update Firestore
+        csv_path = "backend/Legacy/QuickSearch.csv"
+        result = process_quicksearch_to_auctions(csv_path, county, sale_type)
+        print(f"Processed QuickSearch: {result}")
+        # 3. Generate report from Firestore
+        output_path = "dist/reports/sales_report_orange_foreclosure.html"
+        generate_html_report_from_firestore(county, sale_type, output_path)
+        print(f"Generated report: {output_path}")
+        # 4. Upload report and deploy
+        upload_result = upload_report_and_mark_updated(output_path, county, sale_type)
+        print(f"Upload and deploy result: {upload_result}")
+        sys.exit(0)
     func_name = sys.argv[1]
     func = globals().get(func_name)
     if not func or not inspect.isfunction(func):
         print(f"Function '{func_name}' not found.")
         sys.exit(1)
-    if func_name == "process_quicksearch_to_auctions":
+    elif func_name == "process_quicksearch_to_auctions":
         csv_path = "backend/Legacy/QuickSearch.csv"
         county = "Orange"
         sale_type = "Foreclosure"
@@ -333,6 +385,13 @@ if __name__ == "__main__":
         sales_type = "Foreclosure"
         output_path = "dist/reports/sales_report_orange_foreclosure.html"
         generate_html_report_from_firestore(county, sales_type, output_path)
+    elif func_name == "upload_report_and_mark_updated":
+        report_path = "dist/reports/sales_report_orange_foreclosure.html"
+        county = "Orange"
+        sale_type = "Foreclosure"
+        dest_dir = "dist/reports"
+        result = upload_report_and_mark_updated(report_path, county, sale_type, dest_dir)
+        print(result)
     else:
         # Pass all remaining args to the function
         result = func(*sys.argv[2:])
