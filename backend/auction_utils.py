@@ -108,8 +108,8 @@ def get_next_sale_for_county(county_name, json_path='backend/Legacy/foreclosureS
 
 def get_next_sale_for_county_if_stale(county_name, sale_type, min_hours=0, json_path='backend/Legacy/foreclosureSales_clean.json'):
     """
-    Returns (sale_type, sale_date, row) for the next sale for the given county ONLY IF the last update for that county/sale_type
-    in Firestore was more than min_hours ago. Otherwise returns (None, None, None).
+    Returns (sale_type, sale_date, row, sale_list_url) for the next sale for the given county ONLY IF the last update for that county/sale_type
+    in Firestore was more than min_hours ago. Otherwise returns (None, None, None, None).
     """
     from datetime import timezone, timedelta, datetime
     county_doc = db.collection("auction_parameters").document(county_name.lower()).get()
@@ -125,8 +125,17 @@ def get_next_sale_for_county_if_stale(county_name, sale_type, min_hours=0, json_
             now = datetime.now(timezone.utc)
             hours_since = (now - last_update_dt).total_seconds() / 3600.0
             if hours_since < min_hours:
-                return None, None, None
-    return get_next_sale_for_county(county_name, json_path)
+                return None, None, None, None
+    # Always return 4 values
+    result = get_next_sale_for_county(county_name, json_path)
+    if result is None:
+        return None, None, None, None
+    if len(result) == 4:
+        return result
+    elif len(result) == 3:
+        return result[0], result[1], result[2], None
+    else:
+        return None, None, None, None
 
 def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dist/reports'):
     """
@@ -335,64 +344,22 @@ def generate_html_report_from_sales(sales, output_path, county, sales_type):
     print(f'Report generated: {output_path}')
 
 if __name__ == "__main__":
-    import sys
-    import inspect
-    import csv
-    if len(sys.argv) < 2:
-        # Default: run the test workflow
-        county = "Orange"
-        sale_type = "Foreclosure"
-        min_hours = 24
-        next_type, next_date, next_row = get_next_sale_for_county_if_stale(county, sale_type, min_hours)
-        print(f"Next sale for {county} ({sale_type}) if stale >{min_hours}h: {next_type}, {next_date}, {next_row}")
-        input("\nDownload the QuickSearch file for this county/sale_type and press Enter to continue...")
-        # 2. Process QuickSearch and update Firestore
-        csv_path = "backend/Legacy/QuickSearch.csv"
-        result = process_quicksearch_to_auctions(csv_path, county, sale_type)
-        print(f"Processed QuickSearch: {result}")
-        # 3. Generate report from Firestore
-        output_path = "dist/reports/sales_report_orange_foreclosure.html"
-        generate_html_report_from_firestore(county, sale_type, output_path)
-        print(f"Generated report: {output_path}")
-        # 4. Upload report and deploy
-        upload_result = upload_report_and_mark_updated(output_path, county, sale_type)
-        print(f"Upload and deploy result: {upload_result}")
-        sys.exit(0)
-    func_name = sys.argv[1]
-    func = globals().get(func_name)
-    if not func or not inspect.isfunction(func):
-        print(f"Function '{func_name}' not found.")
-        sys.exit(1)
-    elif func_name == "process_quicksearch_to_auctions":
-        csv_path = "backend/Legacy/QuickSearch.csv"
-        county = "Orange"
-        sale_type = "Foreclosure"
-        result = func(csv_path, county, sale_type)
-        print(result)
-    elif func_name == "generate_html_report_from_sales":
-        # For testing: load sales from CSV, filter, and generate report
-        csv_path = "backend/Legacy/QuickSearch.csv"
-        county = "Orange"
-        sale_type = "Foreclosure"
-        output_path = "dist/reports/sales_report_orange_foreclosure.html"
-        with open(csv_path, newline='', encoding='utf-8-sig') as f:
-            reader = csv.DictReader(f)
-            sales = list(reader)
-        filtered = filter_sales(sales, county, sale_type)
-        generate_html_report_from_sales(filtered, output_path, county, sale_type)
-    elif func_name == "generate_html_report_from_firestore":
-        county = "Orange"
-        sales_type = "Foreclosure"
-        output_path = "dist/reports/sales_report_orange_foreclosure.html"
-        generate_html_report_from_firestore(county, sales_type, output_path)
-    elif func_name == "upload_report_and_mark_updated":
-        report_path = "dist/reports/sales_report_orange_foreclosure.html"
-        county = "Orange"
-        sale_type = "Foreclosure"
-        dest_dir = "dist/reports"
-        result = upload_report_and_mark_updated(report_path, county, sale_type, dest_dir)
-        print(result)
-    else:
-        # Pass all remaining args to the function
-        result = func(*sys.argv[2:])
-        print(result)
+    print("=== auction_utils.py is running ===")
+    json_path = 'backend/Legacy/foreclosureSales_clean.json'
+    with open(json_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    for row in data:
+        county = row.get('County', '').strip()
+        for sale_type in ['Foreclosure', 'Tax Deed']:
+            if sale_type == 'Foreclosure':
+                flag = str(row.get('UiPath', '')).strip().lower() == 'x'
+                sale_list_url = row.get('List')
+            else:
+                flag = str(row.get('UiPathTD', '')).strip().lower() == 'x'
+                sale_list_url = row.get('TaxDeedList')
+            if flag and sale_list_url:
+                print(county)
+                print(sale_type)
+                print(sale_list_url)
+                exit(0)
+    print('No valid county/sale type/path found.')
