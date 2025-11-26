@@ -71,7 +71,7 @@ def process_quicksearch_to_auctions(csv_path, county, sale_type):
     param_doc = db.collection("auction_parameters").document(f"{county}_{sale_type}")
     param_doc.set({"last_update": datetime.datetime.utcnow()}, merge=True)
     return {"total": total, "written": written, "skipped": skipped, "county": county, "sale_type": sale_type, "date": date}
-    
+
 def parse_date(date_str):
     try:
         return datetime.strptime(date_str.strip(), '%m/%d/%Y')
@@ -148,26 +148,181 @@ def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dis
     # NOTE: You must still run `firebase deploy --only hosting` to upload to Firebase Hosting
     return dest_path
 
+
+def filter_sales(sales, county, sales_type):
+    filtered = []
+    for row in sales:
+        row_county = (row.get('County') or '').strip().lower()
+        row_type = (row.get('SaleType') or row.get('Sales Type') or '').strip().lower()
+        if row_county == county.lower() and row_type == sales_type.lower():
+            filtered.append(row)
+    return filtered
+
+def generate_html_report_from_sales(sales, output_path, county, sales_type):
+    import os
+    from datetime import datetime
+    # Safety check: ensure sortable-table.js exists
+    js_path = os.path.join(os.path.dirname(__file__), '..', 'public', 'sortable-table.js')
+    if not os.path.isfile(js_path):
+        print(f"ERROR: Required JS file not found: {js_path}\nReport generation aborted to prevent loss of interactivity.")
+        return
+
+    # Load PA template for the county
+    import json
+    pa_template = None
+    pa_template_path = os.path.join(os.path.dirname(__file__), 'Legacy', 'foreclosureSales_clean.json')
+    try:
+        with open(pa_template_path, 'r', encoding='utf-8') as f:
+            pa_data = json.load(f)
+            for entry in pa_data:
+                if entry.get('County', '').strip().lower() == county.strip().lower():
+                    pa_template = entry.get('PA template', '').strip()
+                    break
+    except Exception as e:
+        pa_template = None
+
+    FIELD_ORDER = [
+        ("Add Date", "Add Date"),
+        ("Address", "Address"),
+        ("AssessedValue", "Assessed Value"),
+        ("Case Number", "Case Number"),
+        ("Certificate Holder Name", "Certificate Holder Name"),
+        ("City", "City"),
+        ("Final Judgment", "Final Judgment"),
+        ("My Bid", "My Bid"),
+        ("Opening Bid", "Opening Bid"),
+        ("Parcel ID", "Parcel ID"),
+        ("PlaintiffMaxBid", "Plaintiff Max Bid"),
+        ("Sale Date", "Sale Date"),
+        ("Status", "Status"),
+        ("Zip", "Zip"),
+    ]
+    html = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{county.title()} County {sales_type.title()} Report</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 2em; }}
+        .report-scroll-container {{
+            max-width: 1700px;
+            height: 1200px;
+            overflow: auto;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background: #fff;
+        }}
+        .sticky-title {{
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 100;
+            padding-bottom: 0.5em;
+            border-bottom: 2px solid #eee;
+        }}
+        .sticky-table-header th {{
+            position: sticky;
+            top: 2.2em;
+            background: #f4f4f4;
+            z-index: 99;
+        }}
+        table {{ border-collapse: collapse; width: 100%; }}
+        th, td {{ border: 1px solid #ccc; padding: 8px; text-align: left; }}
+        tr:nth-child(even) {{ background: #fafafa; }}
+        .filter-note {{ color: #666; font-size: 0.95em; margin-bottom: 1em; }}
+    </style>
+</head>
+<body>
+    <div class="report-scroll-container">
+        <div class="sticky-title"><strong>{county.title()} County {sales_type.title()} Report</strong><br><span style="font-weight: normal; font-size: 0.95em;">Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span></div>
+        <table>
+            <thead class="sticky-table-header">
+                <tr>'''
+    html += '<th style="width:36px"><input type="checkbox" id="header-show-selected" title="Show Selected Only" style="transform: scale(1.3); cursor: pointer; vertical-align: middle;" /></th>'  # Checkbox column
+    for field, label in FIELD_ORDER:
+        html += f'<th>{label}</th>'
+    html += '</tr>\n        </thead>\n        <tbody>\n'
+    def format_currency(val):
+        try:
+            num = float(str(val).replace(',', '').replace('$', ''))
+            if num == 0:
+                return '0'
+            return f"${num:,.2f}"
+        except Exception:
+            return val
+
+    for row in sales:
+        html += '<tr><td></td>'  # Always prepend checkbox column
+        for field, _ in FIELD_ORDER:
+            cell = row.get(field, "")
+            if field == "Address":
+                address = str(row.get("Address", "")).strip()
+                city = str(row.get("City", "")).strip()
+                zip_code = str(row.get("Zip", "")).strip()
+                if address:
+                    q = address
+                    if city:
+                        q += f", {city}"
+                    if zip_code:
+                        q += f" {zip_code}"
+                    maps_url = f"https://www.google.com/maps/search/?api=1&query={q.replace(' ', '+')}"
+                    html += f'<td><a href="{maps_url}" target="_blank" rel="noopener noreferrer">{address}</a></td>'
+                else:
+                    html += '<td></td>'
+            elif field == "Parcel ID":
+                parcel_id = str(cell).strip()
+                # Only hyperlink if not blank, not 'TIMESHARE', and does not contain 'MULTIPLE PARCELS' (case-insensitive)
+                if pa_template and parcel_id and parcel_id.upper() != 'TIMESHARE' and 'MULTIPLE PARCELS' not in parcel_id.upper() and 'TIMESHARE' not in parcel_id.upper():
+                    pa_url = pa_template.replace('<<PID>>', parcel_id)
+                    html += f'<td><a href="{pa_url}" target="_blank" rel="noopener noreferrer">{parcel_id}</a></td>'
+                else:
+                    html += f'<td>{parcel_id}</td>'
+            elif field in ("Final Judgment", "Opening Bid", "AssessedValue"):
+                html += f'<td>{format_currency(cell)}</td>'
+            else:
+                html += f'<td>{cell}</td>'
+        html += '</tr>\n'
+    html += '        </tbody>\n      </table>\n    </div>'
+    html += '\n<script src="/sortable-table.js"></script>'
+    html += '\n</body>\n</html>'
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html)
+    print(f'Report generated: {output_path}')
+
+# --- MAIN BLOCK FOR FUNCTION DISPATCH TESTING ---
 # --- MAIN BLOCK FOR FUNCTION DISPATCH TESTING ---
 if __name__ == "__main__":
     import sys
     import inspect
+    import csv
     if len(sys.argv) < 2:
         print("Usage: python auction_utils.py <function_name> [args ...]")
-        print("Example: python auction_utils.py process_quicksearch_to_auctions")
+        print("Example: python auction_utils.py generate_html_report_from_sales")
         sys.exit(1)
     func_name = sys.argv[1]
     func = globals().get(func_name)
     if not func or not inspect.isfunction(func):
         print(f"Function '{func_name}' not found.")
         sys.exit(1)
-    # For process_quicksearch_to_auctions, hardcode Orange and Foreclosure for testing
     if func_name == "process_quicksearch_to_auctions":
         csv_path = "backend/Legacy/QuickSearch.csv"
         county = "Orange"
         sale_type = "Foreclosure"
         result = func(csv_path, county, sale_type)
+        print(result)
+    elif func_name == "generate_html_report_from_sales":
+        # For testing: load sales from CSV, filter, and generate report
+        csv_path = "backend/Legacy/QuickSearch.csv"
+        county = "Orange"
+        sale_type = "Foreclosure"
+        output_path = "dist/reports/sales_report_orange_foreclosure.html"
+        with open(csv_path, newline='', encoding='utf-8-sig') as f:
+            reader = csv.DictReader(f)
+            sales = list(reader)
+        filtered = filter_sales(sales, county, sale_type)
+        generate_html_report_from_sales(filtered, output_path, county, sale_type)
     else:
         # Pass all remaining args to the function
         result = func(*sys.argv[2:])
-    print(result)
+        print(result)
