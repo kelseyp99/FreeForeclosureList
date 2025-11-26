@@ -89,3 +89,45 @@ def get_next_sale_for_county(county_name, json_path='backend/Legacy/foreclosureS
             else:
                 return None, None, row
     return None, None, None
+
+
+    def get_next_sale_for_county_if_stale(county_name, sale_type, min_hours=0, json_path='backend/Legacy/foreclosureSales_clean.json'):
+    """
+    Returns (sale_type, sale_date, row) for the next sale for the given county ONLY IF the last update for that county/sale_type
+    in Firestore was more than min_hours ago. Otherwise returns (None, None, None).
+    """
+    from datetime import timezone, timedelta
+    param_doc = db.collection("auction_parameters").document(f"{county_name}_{sale_type}").get()
+    if param_doc.exists:
+        last_update = param_doc.to_dict().get("last_update")
+        if last_update:
+            # last_update is a Firestore timestamp; convert to datetime if needed
+            if hasattr(last_update, 'replace'):
+                last_update_dt = last_update.replace(tzinfo=timezone.utc)
+            else:
+                # If it's a string, parse it
+                last_update_dt = datetime.fromisoformat(str(last_update))
+            now = datetime.now(timezone.utc)
+            hours_since = (now - last_update_dt).total_seconds() / 3600.0
+            if hours_since < min_hours:
+                return None, None, None
+    # If no recent update, return next sale as usual
+    return get_next_sale_for_county(county_name, json_path)
+
+    def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dist/reports'):
+    """
+    Copies the report HTML to the deploy directory and updates Firestore auction_parameters last_update.
+    After this, run `firebase deploy --only hosting` to push to Firebase Hosting.
+    """
+    import shutil
+    import datetime
+    import os
+    # Copy report to dist/reports
+    if not os.path.exists(dest_dir):
+        os.makedirs(dest_dir)
+    dest_path = os.path.join(dest_dir, os.path.basename(report_path))
+    shutil.copy2(report_path, dest_path)
+    # Update Firestore last_update
+    param_doc = db.collection("auction_parameters").document(f"{county}_{sale_type}")
+    param_doc.set({"last_update": datetime.datetime.utcnow()}, merge=True)
+    return dest_path
