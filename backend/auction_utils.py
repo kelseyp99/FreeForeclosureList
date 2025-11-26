@@ -1,3 +1,5 @@
+print("=== auction_utils.py is running ===")
+
 import os
 import csv
 import re
@@ -12,18 +14,31 @@ credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCO
 db = firestore.Client(credentials=credentials)
 
 def process_quicksearch_to_auctions(csv_path, county, sale_type):
-    """
-    Process a QuickSearch CSV and upsert sales into Firestore for the given county and sale_type.
-    On success, update the auction_parameters table to record the update time for this county/sale_type.
-    Accepts any filename; uses today's date if no date is found in the filename.
-    """
     import datetime
+    import os
+    import re
+    import csv
+
+    # --- DEBUG: Print Firestore project and test write ---
+    project_id = db.project
+    print(f"[DEBUG] Firestore project_id: {project_id}")
+    print(f"[DEBUG] Writing to collection: 'sales'")
+    # Minimal test write
+    try:
+        test_doc = {'test': True, 'timestamp': datetime.datetime.now().isoformat()}
+        result = db.collection('sales').add(test_doc)
+        print(f"[DEBUG] Test write to 'sales' collection succeeded. Doc id: {result.id if hasattr(result, 'id') else result}")
+    except Exception as e:
+        print(f"[DEBUG] Test write to 'sales' collection failed: {e}")
+    # --- END DEBUG ---
+
     base = os.path.basename(csv_path)
     m = re.match(r"[A-Za-z]+[-_](\d{8})[_-]?(Foreclosure|TaxDeed)?[_-]?QuickSearch\.csv", base, re.IGNORECASE)
     date = m.group(1) if m else datetime.datetime.now().strftime('%Y%m%d')
     total = 0
     written = 0
     skipped = 0
+    print(f"Processing CSV: {csv_path} for County: {county}, Sale Type: {sale_type}")
     with open(csv_path, newline='', encoding='utf-8-sig') as f:
         reader = csv.DictReader(f)
         reader.fieldnames = [fn.strip() for fn in reader.fieldnames]
@@ -35,22 +50,28 @@ def process_quicksearch_to_auctions(csv_path, county, sale_type):
                 skipped += 1
                 continue
             written += 1
-            doc_name = f"{county}_{date}"
-            if sale_type and sale_type.lower() != 'unknown':
-                doc_name += f"_{sale_type.lower()}"
-            doc_ref = db.collection("Auctions").document(doc_name).collection("Sales").document(str(casenumber))
+            # Save each sale as a document in the top-level 'sales' collection
+            sale_doc = dict(row)
+            sale_doc['County'] = county
+            sale_doc['SaleType'] = sale_type
+            sale_doc['UploadDate'] = date
+            print(f"Uploading case {casenumber} to 'sales' collection with County={county}, SaleType={sale_type}, UploadDate={date}")
+            doc_ref = db.collection("sales").document(str(casenumber))
             existing = doc_ref.get()
-            if existing.exists:
-                old = existing.to_dict()
-                update = {k: v for k, v in row.items() if k not in ("Case Number", "CaseNumber", "CaseNo") and old.get(k) != v}
-                if update:
-                    doc_ref.update(update)
-            else:
-                doc_ref.set(row)
+            try:
+                if existing.exists:
+                    old = existing.to_dict()
+                    update = {k: v for k, v in sale_doc.items() if k not in ("Case Number", "CaseNumber", "CaseNo") and old.get(k) != v}
+                    if update:
+                        doc_ref.update(update)
+                else:
+                    doc_ref.set(sale_doc)
+            except Exception as e:
+                print(f"Error writing case {casenumber} to Firestore: {e}")
     param_doc = db.collection("auction_parameters").document(f"{county}_{sale_type}")
     param_doc.set({"last_update": datetime.datetime.utcnow()}, merge=True)
     return {"total": total, "written": written, "skipped": skipped, "county": county, "sale_type": sale_type, "date": date}
-
+    
 def parse_date(date_str):
     try:
         return datetime.strptime(date_str.strip(), '%m/%d/%Y')
@@ -126,3 +147,27 @@ def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dis
     county_doc.set(update_data, merge=True)
     # NOTE: You must still run `firebase deploy --only hosting` to upload to Firebase Hosting
     return dest_path
+
+# --- MAIN BLOCK FOR FUNCTION DISPATCH TESTING ---
+if __name__ == "__main__":
+    import sys
+    import inspect
+    if len(sys.argv) < 2:
+        print("Usage: python auction_utils.py <function_name> [args ...]")
+        print("Example: python auction_utils.py process_quicksearch_to_auctions")
+        sys.exit(1)
+    func_name = sys.argv[1]
+    func = globals().get(func_name)
+    if not func or not inspect.isfunction(func):
+        print(f"Function '{func_name}' not found.")
+        sys.exit(1)
+    # For process_quicksearch_to_auctions, hardcode Orange and Foreclosure for testing
+    if func_name == "process_quicksearch_to_auctions":
+        csv_path = "backend/Legacy/QuickSearch.csv"
+        county = "Orange"
+        sale_type = "Foreclosure"
+        result = func(csv_path, county, sale_type)
+    else:
+        # Pass all remaining args to the function
+        result = func(*sys.argv[2:])
+    print(result)
