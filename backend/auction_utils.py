@@ -131,11 +131,11 @@ def get_next_sale(min_hours=0):
     if oldest_candidate and oldest_candidate[2]:
         return oldest_candidate
     return None, None, None
-
 def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dist/reports'):
     """
-    Runs the build step, copies the report HTML to the Firebase Hosting dist directory,
-    updates Firestore auction_parameters last_update, and deploys to Firebase Hosting.
+    Runs the build step, ensures the report HTML exists (regenerates if missing),
+    copies it to the Firebase Hosting dist directory, updates Firestore auction_parameters last_update,
+    and deploys to Firebase Hosting.
     """
     import shutil
     import datetime
@@ -154,15 +154,29 @@ def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dis
         build_output = ""
         build_error = str(e)
 
-    # 2. Always copy to Firebase Hosting dist directory
+    # 2. After build, check if report exists; if not, regenerate it
+    if not os.path.exists(report_path):
+        print(f"[WARN] Report file {report_path} missing after build. Regenerating...")
+        try:
+            output_path = generate_html_report_from_firestore(county, sale_type)
+            if output_path != report_path:
+                print(f"[WARN] Regenerated report path {output_path} does not match expected {report_path}. Using regenerated path.")
+                report_path = output_path
+        except Exception as e:
+            print(f"[ERROR] Failed to regenerate report: {e}")
+
+    # 3. Always copy to Firebase Hosting dist directory
     firebase_dist_dir = os.path.join(os.path.dirname(__file__), '..', 'dist', 'reports')
     if not os.path.exists(firebase_dist_dir):
         os.makedirs(firebase_dist_dir)
     dest_path = os.path.join(firebase_dist_dir, os.path.basename(report_path))
-    if os.path.abspath(report_path) != os.path.abspath(dest_path):
+    try:
         shutil.copy2(report_path, dest_path)
+        print(f"[INFO] Copied {report_path} to {dest_path}")
+    except Exception as e:
+        print(f"[ERROR] Could not copy {report_path} to {dest_path}: {e}")
 
-        # 3. Update Firestore last update for the correct sale type field
+    # 4. Update Firestore last update for the correct sale type field
     county_doc = db.collection("auction_parameters").document(county)
     now = datetime.datetime.utcnow()
     if sale_type.lower() == "foreclosure":
@@ -173,7 +187,7 @@ def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dis
         update_data = {f"{sale_type}LastUpdate": now}
     county_doc.set(update_data, merge=True)
 
-    # 4. Deploy to Firebase Hosting
+    # 5. Deploy to Firebase Hosting
     try:
         result = subprocess.run(
             ["firebase", "deploy", "--only", "hosting"],
@@ -194,7 +208,6 @@ def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dis
         "deploy_error": deploy_error
     }
 
-
 def filter_sales(sales, county, sales_type):
     filtered = []
     for row in sales:
@@ -205,9 +218,7 @@ def filter_sales(sales, county, sales_type):
     return filtered
 
 def generate_html_report_from_firestore(county, sales_type):
-    # Uses the global db object (already created at the top of your file)
-
-    
+    # Uses the global db object (already created at the top of your file
     sales_ref = db.collection('sales')
     docs = sales_ref.stream()
     sales = [doc.to_dict() for doc in docs]
@@ -217,7 +228,7 @@ def generate_html_report_from_firestore(county, sales_type):
 def generate_html_report_from_sales(sales, county, sales_type):
     import os
     from datetime import datetime
-    output_path = f"dist/reports/sales_report_{county.lower()}_{sale_type.lower()}.html"
+    output_path = f"dist/reports/sales_report_{county.lower()}_{sales_type.lower()}.html"
     # Safety check: ensure sortable-table.js exists
     js_path = os.path.join(os.path.dirname(__file__), '..', 'public', 'sortable-table.js')
     if not os.path.isfile(js_path):
@@ -359,8 +370,7 @@ def filter_sales(sales, county, sales_type):
     print(f"[DEBUG] Total matches found: {len(filtered)}")
     return filtered
 
-# ...existing code...
-if __name__ == "__main__":
+def testAll():
     print("=== auction_utils.py is running ===")
     csv_path = f"backend/Legacy/QuickSearch.csv"
     min_hours = 24
@@ -382,3 +392,27 @@ if __name__ == "__main__":
     upload_result = upload_report_and_mark_updated(output_path, county, sale_type)
     print(f"Upload and deploy result: {upload_result}")
     exit(0)
+
+
+import sys
+def arg(n):
+    try:
+        return sys.argv[n]
+    except IndexError:
+        return None
+
+if __name__ == "__main__":
+    if arg(1) == "generate_html_report_from_firestore":
+        county = arg(2)
+        sales_type = arg(3)
+        print(generate_html_report_from_firestore(county, sales_type))
+    elif arg(1) == "upload_report_and_mark_updated":
+        county = arg(2)
+        sales_type = arg(3)
+        output_path = arg(4)
+        print(upload_report_and_mark_updated(output_path, county, sales_type))
+    elif arg(1) == "testAll":
+        testAll()
+    else:
+        # Default action if no or unknown argument is given
+        testAll()
