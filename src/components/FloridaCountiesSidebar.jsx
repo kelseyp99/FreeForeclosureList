@@ -83,7 +83,7 @@ export default function FloridaCountiesSidebar({ onSelectReport }) {
       }}>
         Florida Counties
       </h2>
-      <label style={{ marginBottom: 12, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <label style={{ marginBottom: 12, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, color: '#155724', fontWeight: 600 }}>
         <input type="checkbox" checked={useMRU} onChange={e => setUseMRU(e.target.checked)} />
         Most Recently Used on Top
       </label>

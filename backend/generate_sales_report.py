@@ -32,6 +32,12 @@ def filter_sales(sales, county, sales_type):
     return filtered
 
 def generate_html_report_from_sales(sales, output_path, county, sales_type):
+    # Safety check: ensure sortable-table.js exists
+    js_path = os.path.join(os.path.dirname(__file__), '..', 'public', 'sortable-table.js')
+    if not os.path.isfile(js_path):
+        print(f"ERROR: Required JS file not found: {js_path}\nReport generation aborted to prevent loss of interactivity.")
+        return
+
     # Load PA template for the county
     import json
     pa_template = None
@@ -104,7 +110,7 @@ def generate_html_report_from_sales(sales, output_path, county, sales_type):
             <table>
                 <thead class="sticky-table-header">
                         <tr>'''
-    html += '<th style="width:36px">★</th>'  # Checkbox column
+    html += '<th style="width:36px"><input type="checkbox" id="header-show-selected" title="Show Selected Only" style="transform: scale(1.3); cursor: pointer; vertical-align: middle;" /></th>'  # Checkbox column
     for field, label in FIELD_ORDER:
         html += f'<th>{label}</th>'
     html += '</tr>\n        </thead>\n        <tbody>\n'
@@ -137,7 +143,8 @@ def generate_html_report_from_sales(sales, output_path, county, sales_type):
                     html += '<td></td>'
             elif field == "Parcel ID":
                 parcel_id = str(cell).strip()
-                if pa_template and parcel_id and parcel_id.upper() != 'TIMESHARE':
+                # Only hyperlink if not blank, not 'TIMESHARE', and does not contain 'MULTIPLE PARCELS' (case-insensitive)
+                if pa_template and parcel_id and parcel_id.upper() != 'TIMESHARE' and 'MULTIPLE PARCELS' not in parcel_id.upper() and 'TIMESHARE' not in parcel_id.upper():
                     pa_url = pa_template.replace('<<PID>>', parcel_id)
                     html += f'<td><a href="{pa_url}" target="_blank" rel="noopener noreferrer">{parcel_id}</a></td>'
                 else:
