@@ -13,7 +13,7 @@ SERVICE_ACCOUNT_PATH = "/Users/tinman/Projects/FreeForeclosureList/backend/forec
 credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_PATH)
 db = firestore.Client(credentials=credentials)
 
-def process_quicksearch_to_auctions(csv_path, county, sale_type):
+def process_quicksearch_to_auctions( county, sale_type, csv_path):
     import datetime
     import os
     import re
@@ -78,64 +78,59 @@ def parse_date(date_str):
     except Exception:
         return None
 
-def get_next_sale_for_county(county_name, json_path='backend/Legacy/foreclosureSales_clean.json'):
-    """
-    Returns (sale_type, sale_date, row) for the next sale for the given county.
-    sale_type is 'Foreclosure' or 'Tax Deed'.
-    sale_date is MM/DD/YYYY string or None.
-    row is the full dict from the JSON.
-    """
-    with open(json_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    for row in data:
-        if row.get('County', '').strip().lower() == county_name.strip().lower():
-            fc_flag = str(row.get('UiPath', '')).strip().lower() == 'x'
-            td_flag = str(row.get('UiPathTD', '')).strip().lower() == 'x'
-            fc_date = parse_date(row.get('Foreclosure', '')) if fc_flag else None
-            td_date = parse_date(row.get('Tax Deed', '')) if td_flag else None
-            if fc_date and td_date:
-                if fc_date <= td_date:
-                    return 'Foreclosure', fc_date.strftime('%m/%d/%Y'), row
-                else:
-                    return 'Tax Deed', td_date.strftime('%m/%d/%Y'), row
-            elif fc_date:
-                return 'Foreclosure', fc_date.strftime('%m/%d/%Y'), row
-            elif td_date:
-                return 'Tax Deed', td_date.strftime('%m/%d/%Y'), row
-            else:
-                return None, None, row
-    return None, None, None
 
-def get_next_sale_for_county_if_stale(county_name, sale_type, min_hours=0, json_path='backend/Legacy/foreclosureSales_clean.json'):
+def get_next_sale(min_hours=0):
     """
-    Returns (sale_type, sale_date, row, sale_list_url) for the next sale for the given county ONLY IF the last update for that county/sale_type
-    in Firestore was more than min_hours ago. Otherwise returns (None, None, None, None).
+    Loops through auction_parameters to find the first blank (missing) Foreclosure or Tax Deed last update,
+    or, if none are blank, returns the one with the oldest timestamp.
+    Returns (county, sale_type, url).
     """
-    from datetime import timezone, timedelta, datetime
-    county_doc = db.collection("auction_parameters").document(county_name.lower()).get()
-    if county_doc.exists:
-        doc_dict = county_doc.to_dict()
-        sale_type_data = doc_dict.get(sale_type.lower(), {})
-        last_update = sale_type_data.get("last_update")
-        if last_update:
+    from datetime import datetime, timezone
+
+    params_ref = db.collection("auction_parameters")
+    docs = list(params_ref.stream())
+    now = datetime.now(timezone.utc)
+
+    # First loop: find blank last update
+    for doc in docs:
+        data = doc.to_dict()
+        county = doc.id
+        fc_time = data.get("ForeclosureLastUpdate")
+        td_time = data.get("TaxDeedLastUpdate")
+        foreclosure_url = data.get("List")
+        taxdeed_url = data.get("TaxDeedList")
+        if not fc_time and foreclosure_url:
+            return county, "Foreclosure", foreclosure_url
+        if not td_time and taxdeed_url:
+            return county, "Tax Deed", taxdeed_url
+
+    # Second loop: find oldest
+    oldest_candidate = None
+    oldest_time = None
+    for doc in docs:
+        data = doc.to_dict()
+        county = doc.id
+        fc_time = data.get("ForeclosureLastUpdate")
+        td_time = data.get("TaxDeedLastUpdate")
+        foreclosure_url = data.get("List")
+        taxdeed_url = data.get("TaxDeedList")
+        for sale_type, last_update, url in [
+            ("Foreclosure", fc_time, foreclosure_url),
+            ("Tax Deed", td_time, taxdeed_url)
+        ]:
+            if not last_update:
+                continue
             if hasattr(last_update, 'replace'):
                 last_update_dt = last_update.replace(tzinfo=timezone.utc)
             else:
                 last_update_dt = datetime.fromisoformat(str(last_update))
-            now = datetime.now(timezone.utc)
-            hours_since = (now - last_update_dt).total_seconds() / 3600.0
-            if hours_since < min_hours:
-                return None, None, None, None
-    # Always return 4 values
-    result = get_next_sale_for_county(county_name, json_path)
-    if result is None:
-        return None, None, None, None
-    if len(result) == 4:
-        return result
-    elif len(result) == 3:
-        return result[0], result[1], result[2], None
-    else:
-        return None, None, None, None
+            if (oldest_time is None) or (last_update_dt < oldest_time):
+                oldest_time = last_update_dt
+                oldest_candidate = (county, sale_type, url)
+
+    if oldest_candidate and oldest_candidate[2]:
+        return oldest_candidate
+    return None, None, None
 
 def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dist/reports'):
     """
@@ -167,9 +162,15 @@ def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dis
     if os.path.abspath(report_path) != os.path.abspath(dest_path):
         shutil.copy2(report_path, dest_path)
 
-    # 3. Always update Firestore last_update as a nested field under the sale_type in the county document
-    county_doc = db.collection("auction_parameters").document(county.lower())
-    update_data = {f"{sale_type.lower()}.last_update": datetime.datetime.utcnow()}
+        # 3. Update Firestore last update for the correct sale type field
+    county_doc = db.collection("auction_parameters").document(county)
+    now = datetime.datetime.utcnow()
+    if sale_type.lower() == "foreclosure":
+        update_data = {"ForeclosureLastUpdate": now}
+    elif sale_type.lower() == "tax deed":
+        update_data = {"TaxDeedLastUpdate": now}
+    else:
+        update_data = {f"{sale_type}LastUpdate": now}
     county_doc.set(update_data, merge=True)
 
     # 4. Deploy to Firebase Hosting
@@ -203,17 +204,20 @@ def filter_sales(sales, county, sales_type):
             filtered.append(row)
     return filtered
 
-def generate_html_report_from_firestore(county, sales_type, output_path):
+def generate_html_report_from_firestore(county, sales_type):
     # Uses the global db object (already created at the top of your file)
+
+    
     sales_ref = db.collection('sales')
     docs = sales_ref.stream()
     sales = [doc.to_dict() for doc in docs]
     filtered = filter_sales(sales, county, sales_type)
-    generate_html_report_from_sales(filtered, output_path, county, sales_type)
+    generate_html_report_from_sales(filtered, county, sales_type)
 
-def generate_html_report_from_sales(sales, output_path, county, sales_type):
+def generate_html_report_from_sales(sales, county, sales_type):
     import os
     from datetime import datetime
+    output_path = f"dist/reports/sales_report_{county.lower()}_{sale_type.lower()}.html"
     # Safety check: ensure sortable-table.js exists
     js_path = os.path.join(os.path.dirname(__file__), '..', 'public', 'sortable-table.js')
     if not os.path.isfile(js_path):
@@ -343,23 +347,37 @@ def generate_html_report_from_sales(sales, output_path, county, sales_type):
         f.write(html)
     print(f'Report generated: {output_path}')
 
+def filter_sales(sales, county, sales_type):
+    filtered = []
+    print(f"[DEBUG] Filtering sales for county='{county}', sales_type='{sales_type}'")
+    for row in sales:
+        row_county = (row.get('County') or '').strip().lower()
+        row_type = (row.get('SaleType') or row.get('Sales Type') or '').strip().lower()
+        if row_county == county.lower() and row_type == sales_type.lower():
+            filtered.append(row)
+    print(f"[DEBUG] Total matches found: {len(filtered)}")
+    return filtered
+
+# ...existing code...
+
 if __name__ == "__main__":
     print("=== auction_utils.py is running ===")
-    json_path = 'backend/Legacy/foreclosureSales_clean.json'
-    with open(json_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    for row in data:
-        county = row.get('County', '').strip()
-        for sale_type in ['Foreclosure', 'Tax Deed']:
-            if sale_type == 'Foreclosure':
-                flag = str(row.get('UiPath', '')).strip().lower() == 'x'
-                sale_list_url = row.get('List')
-            else:
-                flag = str(row.get('UiPathTD', '')).strip().lower() == 'x'
-                sale_list_url = row.get('TaxDeedList')
-            if flag and sale_list_url:
-                print(county)
-                print(sale_type)
-                print(sale_list_url)
-                exit(0)
-    print('No valid county/sale type/path found.')
+
+#get the next sale to process
+county, saletype, url, = get_next_sale(24)
+print(county)
+print(sale_type)
+print(sale_list_url)
+input("Press Enter to continue...")
+                # --- Begin workflow steps ---
+csv_path = f"backend/Legacy/QuickSearch.csv"
+process_quicksearch_to_auctions(county, saletype, csv_path)
+print(f"Processed QuickSearch: {result}")
+# Generate report from Firestore
+print(f"[DEBUG] Generating report for county='{county}', sale_type='{sale_type}', output_path='{output_path}'")
+generate_html_report_from_firestore(county, sale_type, output_path)
+print(f"[DEBUG] Generated report: {output_path}")
+# Upload report and deploy
+upload_result = upload_report_and_mark_updated(output_path, county, sale_type)
+print(f"Upload and deploy result: {upload_result}")
+exit(0)
