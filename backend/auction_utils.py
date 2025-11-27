@@ -131,6 +131,7 @@ def get_next_sale(min_hours=0):
     if oldest_candidate and oldest_candidate[2]:
         return oldest_candidate
     return None, None, None
+
 def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dist/reports'):
     """
     Runs the build step, ensures the report HTML exists (regenerates if missing),
@@ -165,14 +166,18 @@ def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dis
         except Exception as e:
             print(f"[ERROR] Failed to regenerate report: {e}")
 
-    # 3. Always copy to Firebase Hosting dist directory
+    # 3. Always copy to Firebase Hosting dist directory, unless source and dest are the same
     firebase_dist_dir = os.path.join(os.path.dirname(__file__), '..', 'dist', 'reports')
     if not os.path.exists(firebase_dist_dir):
         os.makedirs(firebase_dist_dir)
     dest_path = os.path.join(firebase_dist_dir, os.path.basename(report_path))
     try:
-        shutil.copy2(report_path, dest_path)
-        print(f"[INFO] Copied {report_path} to {dest_path}")
+        # Only copy if source and destination are different
+        if os.path.abspath(report_path) != os.path.abspath(dest_path):
+            shutil.copy2(report_path, dest_path)
+            print(f"[INFO] Copied {report_path} to {dest_path}")
+        else:
+            print(f"[INFO] Source and destination are the same file ({report_path}), skipping copy.")
     except Exception as e:
         print(f"[ERROR] Could not copy {report_path} to {dest_path}: {e}")
 
@@ -372,8 +377,18 @@ def filter_sales(sales, county, sales_type):
 
 def testAll():
     print("=== auction_utils.py is running ===")
-    csv_path = f"backend/Legacy/QuickSearch.csv"
+    csv_path = f"/Users/tinman/Downloads/QuickSearch.csv"
     min_hours = 24
+
+    # Before returning, always delete the existing QuickSearch.csv to avoid suffixing in automation
+    quicksearch_path = csv_path
+    import os
+    if os.path.exists(quicksearch_path):
+        try:
+            os.remove(quicksearch_path)
+            print(f"[INFO] Deleted existing {quicksearch_path} to avoid suffixing (from get_next_sale).")
+        except Exception as e:
+            print(f"[WARN] Could not delete {quicksearch_path}: {e}")
 
     #get the next sale to process
     county, sale_type, sale_list_url = get_next_sale(min_hours=min_hours)
