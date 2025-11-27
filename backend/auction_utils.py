@@ -212,7 +212,7 @@ def generate_html_report_from_firestore(county, sales_type):
     docs = sales_ref.stream()
     sales = [doc.to_dict() for doc in docs]
     filtered = filter_sales(sales, county, sales_type)
-    generate_html_report_from_sales(filtered, county, sales_type)
+    return generate_html_report_from_sales(filtered, county, sales_type)
 
 def generate_html_report_from_sales(sales, county, sales_type):
     import os
@@ -346,6 +346,7 @@ def generate_html_report_from_sales(sales, county, sales_type):
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html)
     print(f'Report generated: {output_path}')
+    return output_path
 
 def filter_sales(sales, county, sales_type):
     filtered = []
@@ -359,25 +360,25 @@ def filter_sales(sales, county, sales_type):
     return filtered
 
 # ...existing code...
-
 if __name__ == "__main__":
     print("=== auction_utils.py is running ===")
+    csv_path = f"backend/Legacy/QuickSearch.csv"
+    min_hours = 24
 
-#get the next sale to process
-county, saletype, url, = get_next_sale(24)
-print(county)
-print(sale_type)
-print(sale_list_url)
-input("Press Enter to continue...")
-                # --- Begin workflow steps ---
-csv_path = f"backend/Legacy/QuickSearch.csv"
-process_quicksearch_to_auctions(county, saletype, csv_path)
-print(f"Processed QuickSearch: {result}")
-# Generate report from Firestore
-print(f"[DEBUG] Generating report for county='{county}', sale_type='{sale_type}', output_path='{output_path}'")
-generate_html_report_from_firestore(county, sale_type, output_path)
-print(f"[DEBUG] Generated report: {output_path}")
-# Upload report and deploy
-upload_result = upload_report_and_mark_updated(output_path, county, sale_type)
-print(f"Upload and deploy result: {upload_result}")
-exit(0)
+    #get the next sale to process
+    county, sale_type, sale_list_url = get_next_sale(min_hours=min_hours)
+    print(county)
+    print(sale_type)
+    print(sale_list_url)
+    input("Press Enter to continue...")
+    # --- Begin workflow steps ---
+    result = process_quicksearch_to_auctions(county, sale_type, csv_path)
+    print(f"Processed QuickSearch: {result}")
+    # Generate report from Firestore
+    print(f"[DEBUG] Generating report for county='{county}', sale_type='{sale_type}'")
+    output_path = generate_html_report_from_firestore(county, sale_type)
+    print(f"[DEBUG] Generated report: {output_path}")
+    # Upload report and deploy
+    upload_result = upload_report_and_mark_updated(output_path, county, sale_type)
+    print(f"Upload and deploy result: {upload_result}")
+    exit(0)
