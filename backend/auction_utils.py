@@ -425,6 +425,21 @@ def mark_county_sale_type_excluded(county, sale_type):
     doc_ref.set({field: False}, merge=True)
     print(f"[INFO] Marked {county} {sale_type} as excluded (set {field}=False)")
 
+def backup_to_dropbox():
+    """
+    Copies this script to Dropbox for backup.
+    """
+    import shutil
+    src = os.path.abspath(__file__)
+    dst_dir = "/Users/tinman/Dropbox/SmartCities/FreeForeclosureList"
+    dst = os.path.join(dst_dir, os.path.basename(src))
+    try:
+        os.makedirs(dst_dir, exist_ok=True)
+        shutil.copy2(src, dst)
+        print(f"[INFO] Copied {src} to {dst}")
+    except Exception as e:
+        print(f"[ERROR] Could not copy to Dropbox: {e}")
+
 import sys
 def arg(n):
     try:
@@ -444,6 +459,8 @@ if __name__ == "__main__":
         print(upload_report_and_mark_updated(output_path, county, sales_type))
     elif arg(1) == "testAll":
         testAll()
+    elif arg(1) == "upload_to_dropbox":
+        backup_to_dropbox
     else:
         # Default action if no or unknown argument is given
         testAll()
