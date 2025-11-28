@@ -91,7 +91,15 @@ def get_next_sale(min_hours=0):
     docs = list(params_ref.stream())
     now = datetime.now(timezone.utc)
 
-    # First loop: find blank last update
+    # Helper: decide whether we should process this county/sale_type
+    def should_process(data, sale_type):
+        if sale_type.lower() == "foreclosure":
+            return data.get("processForeclosure", data.get("ForeclosureInclude", True))
+        if sale_type.lower() == "tax deed":
+            return data.get("processTaxDeed", data.get("TaxDeedInclude", True))
+        return True
+
+    # First loop: find blank last update for a sale type that is configured to be processed
     for doc in docs:
         data = doc.to_dict()
         county = doc.id
@@ -99,12 +107,13 @@ def get_next_sale(min_hours=0):
         td_time = data.get("TaxDeedLastUpdate")
         foreclosure_url = data.get("List")
         taxdeed_url = data.get("TaxDeedList")
-        if not fc_time and foreclosure_url:
+
+        if should_process(data, "Foreclosure") and not fc_time and foreclosure_url:
             return county, "Foreclosure", foreclosure_url
-        if not td_time and taxdeed_url:
+        if should_process(data, "Tax Deed") and not td_time and taxdeed_url:
             return county, "Tax Deed", taxdeed_url
 
-    # Second loop: find oldest
+    # Second loop: find oldest last_update among eligible sale types
     oldest_candidate = None
     oldest_time = None
     for doc in docs:
@@ -114,11 +123,15 @@ def get_next_sale(min_hours=0):
         td_time = data.get("TaxDeedLastUpdate")
         foreclosure_url = data.get("List")
         taxdeed_url = data.get("TaxDeedList")
+
         for sale_type, last_update, url in [
             ("Foreclosure", fc_time, foreclosure_url),
             ("Tax Deed", td_time, taxdeed_url)
         ]:
-            if not last_update:
+            # Skip sale types that are not configured to be processed
+            if not should_process(data, sale_type):
+                continue
+            if not last_update or not url:
                 continue
             if hasattr(last_update, 'replace'):
                 last_update_dt = last_update.replace(tzinfo=timezone.utc)
@@ -131,6 +144,7 @@ def get_next_sale(min_hours=0):
     if oldest_candidate and oldest_candidate[2]:
         return oldest_candidate
     return None, None, None
+
 def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dist/reports'):
     """
     Ensures the report HTML exists, copies it to public/reports for deployment,
@@ -374,7 +388,12 @@ def testAll():
     print(county)
     print(sale_type)
     print(sale_list_url)
-    input("Press Enter to continue...")
+    user_input = input("Press Enter to continue or x to exclude moving forward...")
+
+    if user_input.strip().lower() == 'x':
+        mark_county_sale_type_excluded(county, sale_type)
+        print(f"[INFO] Excluded {county} {sale_type} from future processing. Skipping workflow steps.")
+        return
     # --- Begin workflow steps ---
     result = process_quicksearch_to_auctions(county, sale_type, csv_path)
     print(f"Processed QuickSearch: {result}")
@@ -387,6 +406,21 @@ def testAll():
     print(f"Upload and deploy result: {upload_result}")
     exit(0)
 
+def mark_county_sale_type_excluded(county, sale_type):
+    """
+    Sets processForeclosure or processTaxDeed to False for the given county and sale_type in auction_parameters.
+    """
+    field = None
+    if sale_type.lower() == "foreclosure":
+        field = "processForeclosure"
+    elif sale_type.lower() == "tax deed":
+        field = "processTaxDeed"
+    else:
+        print(f"[WARN] Unknown sale_type: {sale_type}")
+        return
+    doc_ref = db.collection("auction_parameters").document(county)
+    doc_ref.set({field: False}, merge=True)
+    print(f"[INFO] Marked {county} {sale_type} as excluded (set {field}=False)")
 
 import sys
 def arg(n):
