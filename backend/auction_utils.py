@@ -39,6 +39,9 @@ def process_quicksearch_to_auctions( county, sale_type, csv_path):
     written = 0
     skipped = 0
     print(f"Processing CSV: {csv_path} for County: {county}, Sale Type: {sale_type}")
+    if not os.path.exists(csv_path):
+        print(f"[ERROR] CSV file not found: {csv_path}")
+        return {"error": f"CSV file not found: {csv_path}", "county": county, "sale_type": sale_type}
     with open(csv_path, newline='', encoding='utf-8-sig') as f:
         reader = csv.DictReader(f)
         reader.fieldnames = [fn.strip() for fn in reader.fieldnames]
