@@ -57,7 +57,7 @@ export default function FloridaCountiesSidebar({ onSelectReport }) {
       let mappedType = saleType;
       if (saleType === 'UiPath') mappedType = 'foreclosure';
       else if (saleType === 'UiPathTD') mappedType = 'taxdeed';
-      onSelectReport(county, mappedType);
+      onSelectReport(county.toLowerCase().replace(/\s/g, "_"), mappedType);
     }
   }
 

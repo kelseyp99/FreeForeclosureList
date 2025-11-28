@@ -131,57 +131,36 @@ def get_next_sale(min_hours=0):
     if oldest_candidate and oldest_candidate[2]:
         return oldest_candidate
     return None, None, None
-
 def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dist/reports'):
     """
-    Runs the build step, ensures the report HTML exists (regenerates if missing),
-    copies it to the Firebase Hosting dist directory, updates Firestore auction_parameters last_update,
-    and deploys to Firebase Hosting.
+    Ensures the report HTML exists, copies it to public/reports for deployment,
+    updates Firestore auction_parameters last_update, and deploys to Firebase Hosting.
     """
     import shutil
     import datetime
     import os
     import subprocess
 
-    # 1. Run the build step
+    # 1. Always copy to public/reports (for deploy)
+    public_reports_dir = os.path.join(os.path.dirname(__file__), '..', 'public', 'reports')
+    if not os.path.exists(public_reports_dir):
+        os.makedirs(public_reports_dir)
+    public_dest_path = os.path.join(public_reports_dir, os.path.basename(report_path))
     try:
-        build_result = subprocess.run(
-            ["npm", "run", "build"],
-            capture_output=True, text=True, check=True
-        )
-        build_output = build_result.stdout
-        build_error = build_result.stderr
-    except Exception as e:
-        build_output = ""
-        build_error = str(e)
-
-    # 2. After build, check if report exists; if not, regenerate it
-    if not os.path.exists(report_path):
-        print(f"[WARN] Report file {report_path} missing after build. Regenerating...")
-        try:
-            output_path = generate_html_report_from_firestore(county, sale_type)
-            if output_path != report_path:
-                print(f"[WARN] Regenerated report path {output_path} does not match expected {report_path}. Using regenerated path.")
-                report_path = output_path
-        except Exception as e:
-            print(f"[ERROR] Failed to regenerate report: {e}")
-
-    # 3. Always copy to Firebase Hosting dist directory, unless source and dest are the same
-    firebase_dist_dir = os.path.join(os.path.dirname(__file__), '..', 'dist', 'reports')
-    if not os.path.exists(firebase_dist_dir):
-        os.makedirs(firebase_dist_dir)
-    dest_path = os.path.join(firebase_dist_dir, os.path.basename(report_path))
-    try:
-        # Only copy if source and destination are different
-        if os.path.abspath(report_path) != os.path.abspath(dest_path):
-            shutil.copy2(report_path, dest_path)
-            print(f"[INFO] Copied {report_path} to {dest_path}")
+        if os.path.abspath(report_path) != os.path.abspath(public_dest_path):
+            shutil.copy2(report_path, public_dest_path)
+            print(f"[INFO] Copied {report_path} to {public_dest_path}")
         else:
             print(f"[INFO] Source and destination are the same file ({report_path}), skipping copy.")
     except Exception as e:
-        print(f"[ERROR] Could not copy {report_path} to {dest_path}: {e}")
+        print(f"[ERROR] Could not copy {report_path} to {public_dest_path}: {e}")
 
-    # 4. Update Firestore last update for the correct sale type field
+    # 2. (Optional) Run the build step if you want to update frontend code
+    # To avoid unnecessary builds, comment out or remove the build step unless needed
+    build_output = ""
+    build_error = ""
+
+    # 3. Update Firestore last update for the correct sale type field
     county_doc = db.collection("auction_parameters").document(county)
     now = datetime.datetime.utcnow()
     if sale_type.lower() == "foreclosure":
@@ -192,7 +171,7 @@ def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dis
         update_data = {f"{sale_type}LastUpdate": now}
     county_doc.set(update_data, merge=True)
 
-    # 5. Deploy to Firebase Hosting
+    # 4. Deploy to Firebase Hosting
     try:
         result = subprocess.run(
             ["firebase", "deploy", "--only", "hosting"],
@@ -207,7 +186,7 @@ def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dis
     return {
         "build_output": build_output,
         "build_error": build_error,
-        "copied_to": dest_path,
+        "copied_to": public_dest_path,
         "firestore_updated": True,
         "deploy_output": deploy_output,
         "deploy_error": deploy_error
@@ -233,7 +212,7 @@ def generate_html_report_from_firestore(county, sales_type):
 def generate_html_report_from_sales(sales, county, sales_type):
     import os
     from datetime import datetime
-    output_path = f"dist/reports/sales_report_{county.lower()}_{sales_type.lower()}.html"
+    output_path = f"dist/reports/sales_report_{county.lower()}_{sales_type.lower().replace(" ", "")}.html"
     # Safety check: ensure sortable-table.js exists
     js_path = os.path.join(os.path.dirname(__file__), '..', 'public', 'sortable-table.js')
     if not os.path.isfile(js_path):
