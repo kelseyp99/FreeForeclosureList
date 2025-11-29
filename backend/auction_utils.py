@@ -82,10 +82,11 @@ def parse_date(date_str):
         return None
 
 
-def get_next_sale(min_hours=0):
+def get_next_sale(min_hours=0, counties=None):
     """
     Loops through auction_parameters to find the first blank (missing) Foreclosure or Tax Deed last update,
     or, if none are blank, returns the one with the oldest timestamp.
+    If 'counties' is provided, restricts to those counties (case-insensitive, accepts str or list).
     Returns (county, sale_type, url).
     """
     from datetime import datetime, timezone
@@ -93,6 +94,12 @@ def get_next_sale(min_hours=0):
     params_ref = db.collection("auction_parameters")
     docs = list(params_ref.stream())
     now = datetime.now(timezone.utc)
+
+    # Normalize counties input
+    if counties is not None:
+        if isinstance(counties, str):
+            counties = [counties]
+        counties = set(c.strip().lower() for c in counties)
 
     # Helper: decide whether we should process this county/sale_type
     def should_process(data, sale_type):
@@ -106,6 +113,8 @@ def get_next_sale(min_hours=0):
     for doc in docs:
         data = doc.to_dict()
         county = doc.id
+        if counties is not None and county.strip().lower() not in counties:
+            continue
         fc_time = data.get("ForeclosureLastUpdate")
         td_time = data.get("TaxDeedLastUpdate")
         foreclosure_url = data.get("List")
@@ -122,6 +131,8 @@ def get_next_sale(min_hours=0):
     for doc in docs:
         data = doc.to_dict()
         county = doc.id
+        if counties is not None and county.strip().lower() not in counties:
+            continue
         fc_time = data.get("ForeclosureLastUpdate")
         td_time = data.get("TaxDeedLastUpdate")
         foreclosure_url = data.get("List")
@@ -371,7 +382,7 @@ def filter_sales(sales, county, sales_type):
     print(f"[DEBUG] Total matches found: {len(filtered)}")
     return filtered
 
-def testAll():
+def refreshSales(counties=None, sales_type=None):
     print("=== auction_utils.py is running ===")
     csv_path = f"/Users/tinman/Downloads/QuickSearch.csv"
     min_hours = 24
@@ -386,8 +397,13 @@ def testAll():
         except Exception as e:
             print(f"[WARN] Could not delete {quicksearch_path}: {e}")
 
-    #get the next sale to process
-    county, sale_type, sale_list_url = get_next_sale(min_hours=min_hours)
+    # get the next sale to process
+    if counties:
+        county, sale_type, sale_list_url = get_next_sale(min_hours=min_hours, counties=counties)
+    elif sales_type:
+        county, sale_type, sale_list_url = None, sales_type, None
+    else:
+        county, sale_type, sale_list_url = get_next_sale(min_hours=min_hours)
     print(county)
     print(sale_type)
     print(sale_list_url)
@@ -476,11 +492,16 @@ if __name__ == "__main__":
         sales_type = arg(3)
         output_path = arg(4)
         print(upload_report_and_mark_updated(output_path, county, sales_type))
-    elif arg(1) == "testAll":
-        testAll()
+    elif arg(1) == "refreshSales":
+        # Support: python auction_utils.py refreshSales Orange,Pasco
+        counties_arg = arg(2)
+        counties = None
+        if counties_arg:
+            counties = [c.strip() for c in counties_arg.split(",") if c.strip()]
+        refreshSales(counties=counties)
     elif arg(1) == "upload_to_dropbox":
         print("copying to dropbox...")
         backup_to_dropbox()
     else:
         # Default action if no or unknown argument is given
-        testAll()
+        refreshSales()
