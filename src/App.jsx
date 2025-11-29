@@ -80,7 +80,7 @@ function App() {
           {/* Owner Associations Filter below Auctions */}
           <div style={{ margin: '18px 0 0 0', width: '100%' }}>
             <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Certificate Holder Type</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16 }}>
               <label style={{ fontWeight: 400, fontSize: 15 }}>
                 <input
                   type="radio"
@@ -107,6 +107,51 @@ function App() {
                   checked={ownerAssocFilter === 'only'}
                   onChange={() => setOwnerAssocFilter('only')}
                 /> Show Only Owner Associations
+              </label>
+            </div>
+            {/* Foreclosure Report Filters */}
+            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Foreclosure Report Filters</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ fontWeight: 400, fontSize: 15 }}>
+                <input
+                  type="checkbox"
+                  checked={localStorage.getItem('ffl_filter_timeshare') === '1'}
+                  onChange={e => {
+                    localStorage.setItem('ffl_filter_timeshare', e.target.checked ? '1' : '0');
+                    window.dispatchEvent(new Event('storage'));
+                  }}
+                /> Hide Timeshare Parcel IDs
+              </label>
+              <label style={{ fontWeight: 400, fontSize: 15 }}>
+                <input
+                  type="checkbox"
+                  checked={localStorage.getItem('ffl_filter_blank') === '1'}
+                  onChange={e => {
+                    localStorage.setItem('ffl_filter_blank', e.target.checked ? '1' : '0');
+                    window.dispatchEvent(new Event('storage'));
+                  }}
+                /> Hide Blank Parcel IDs
+              </label>
+              <label style={{ fontWeight: 400, fontSize: 15, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                Filter Status:
+                <select
+                  multiple
+                  size={3}
+                  style={{ minWidth: 160, maxWidth: 220, fontSize: '1em', marginTop: 4 }}
+                  value={(() => {
+                    try {
+                      return JSON.parse(localStorage.getItem('ffl_filter_status') || '[]');
+                    } catch { return []; }
+                  })()}
+                  onChange={e => {
+                    const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
+                    localStorage.setItem('ffl_filter_status', JSON.stringify(selected));
+                    window.dispatchEvent(new Event('storage'));
+                  }}
+                >
+                  {/* Status options will be injected by sortable-table.js on first load, so we leave this empty for now */}
+                </select>
+                <span style={{ fontSize: 12, color: '#888', marginTop: 2 }}>(Hold Ctrl/Cmd to select multiple)</span>
               </label>
             </div>
           </div>
