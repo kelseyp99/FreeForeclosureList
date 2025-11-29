@@ -110,7 +110,7 @@ def generate_html_report_from_sales(sales, output_path, county, sales_type):
             <table>
                 <thead class="sticky-table-header">
                         <tr>'''
-    # Removed 'Show Selected Only' checkbox from table header
+    html += '<th style="width:36px"><input type="checkbox" id="header-show-selected" title="Show Selected Only" style="transform: scale(1.3); cursor: pointer; vertical-align: middle;" /></th>'  # Checkbox column
     for field, label in FIELD_ORDER:
         html += f'<th>{label}</th>'
     html += '</tr>\n        </thead>\n        <tbody>\n'
