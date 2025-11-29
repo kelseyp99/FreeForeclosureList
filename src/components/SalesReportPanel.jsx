@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from "react";
+import params from '../config/params';
 
 function parseTableFromHTML(html) {
   // Create a DOM parser
@@ -23,6 +24,7 @@ const SalesReportPanel = ({ county = "pasco", saleType = "foreclosure" }) => {
   const [sortDir, setSortDir] = useState("asc");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [ownerAssocFilter, setOwnerAssocFilter] = useState('include'); // include, exclude, only
 
   // Compose the report filename
   const reportFile = `/reports/sales_report_${county.toLowerCase().replace(/\s/g, "_")}_${saleType.toLowerCase().replace(/\s/g, "")}.html`;
@@ -56,14 +58,28 @@ const SalesReportPanel = ({ county = "pasco", saleType = "foreclosure" }) => {
     }
   }
 
-  function getSortedRows() {
-    const { rows } = tableData;
-    if (sortCol == null) return rows;
-    const sorted = [...rows].sort((a, b) => {
+  function getFilteredAndSortedRows() {
+    const { rows, headers } = tableData;
+    if (!rows.length) return [];
+    // Find Certificate Holder Name column index
+    const certIdx = headers.findIndex(h => h.toLowerCase() === 'certificate holder name');
+    const ownerWords = (params.owner_assoc_words || '').split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
+    let filtered = rows;
+    if (certIdx !== -1 && ownerAssocFilter !== 'include') {
+      filtered = rows.filter(row => {
+        const val = (row[certIdx] || '').toLowerCase();
+        const isOwnerAssoc = ownerWords.some(word => val.includes(word));
+        if (ownerAssocFilter === 'only') return isOwnerAssoc;
+        if (ownerAssocFilter === 'exclude') return !isOwnerAssoc;
+        return true;
+      });
+    }
+    if (sortCol == null) return filtered;
+    const sorted = [...filtered].sort((a, b) => {
       const valA = a[sortCol] || "";
       const valB = b[sortCol] || "";
       // Check if the column is 'Sale Date' or 'Add Date' (case-insensitive)
-      const header = (tableData.headers[sortCol] || '').toLowerCase();
+      const header = (headers[sortCol] || '').toLowerCase();
       if (header === 'sale date' || header === 'add date') {
         // Try to parse as date (MM/DD/YYYY or YYYY-MM-DD)
         const dateA = Date.parse(valA);
@@ -97,33 +113,58 @@ const SalesReportPanel = ({ county = "pasco", saleType = "foreclosure" }) => {
   }
 
   return (
-    <div className="report-scroll-container" style={{ maxWidth: 1700, height: 1200, overflow: 'auto', border: '1px solid #ccc', borderRadius: 8, background: '#fff' }}>
-      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-        <thead className="sticky-table-header">
-          <tr>
-            {tableData.headers.map((header, idx) => (
-              <th
-                key={header}
-                onClick={() => handleSort(idx)}
-                style={{ cursor: 'pointer', background: sortCol === idx ? '#ffe9b3' : undefined }}
-                title="Click to sort"
-              >
-                {header}
-                {sortCol === idx ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {getSortedRows().map((row, i) => (
-            <tr key={i}>
-              {row.map((cell, j) => (
-                <td key={j}>{cell}</td>
+    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start' }}>
+      {/* Sidebar Filters */}
+      <div style={{ minWidth: 220, maxWidth: 260, background: '#f7f7f7', border: '1px solid #eee', borderRadius: 8, marginRight: 18, padding: 16, height: 1200 }}>
+        <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 12 }}>Filters</div>
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>Owner Associations</div>
+          <div>
+            <label style={{ display: 'block', marginBottom: 4 }}>
+              <input type="radio" name="ownerAssoc" value="include" checked={ownerAssocFilter === 'include'} onChange={() => setOwnerAssocFilter('include')} /> Include
+            </label>
+            <label style={{ display: 'block', marginBottom: 4 }}>
+              <input type="radio" name="ownerAssoc" value="exclude" checked={ownerAssocFilter === 'exclude'} onChange={() => setOwnerAssocFilter('exclude')} /> Exclude
+            </label>
+            <label style={{ display: 'block', marginBottom: 4 }}>
+              <input type="radio" name="ownerAssoc" value="only" checked={ownerAssocFilter === 'only'} onChange={() => setOwnerAssocFilter('only')} /> Show Only
+            </label>
+          </div>
+          <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>
+            Words: {params.owner_assoc_words}
+          </div>
+        </div>
+        {/* Add more filters here as needed */}
+      </div>
+      {/* Main Table */}
+      <div className="report-scroll-container" style={{ maxWidth: 1700, height: 1200, overflow: 'auto', border: '1px solid #ccc', borderRadius: 8, background: '#fff', flex: 1 }}>
+        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+          <thead className="sticky-table-header">
+            <tr>
+              {tableData.headers.map((header, idx) => (
+                <th
+                  key={header}
+                  onClick={() => handleSort(idx)}
+                  style={{ cursor: 'pointer', background: sortCol === idx ? '#ffe9b3' : undefined }}
+                  title="Click to sort"
+                >
+                  {header}
+                  {sortCol === idx ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {getFilteredAndSortedRows().map((row, i) => (
+              <tr key={i}>
+                {row.map((cell, j) => (
+                  <td key={j}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
