@@ -116,11 +116,6 @@ function App() {
                 setSelectedSaleType("");
               }}
             >Auctions</a>
-            <AuctionsMenu onSelectReport={(county, saleType) => {
-              console.log('SIDEBAR SELECT:', { county, saleType });
-              setSelectedCounty(county);
-              setSelectedSaleType(saleType);
-            }} />
             <div style={{ marginTop: 18, marginBottom: 2, fontWeight: 700, color: '#7a5c1c', fontSize: 15, letterSpacing: 0.5 }}>Administration</div>
             <a
               href="/auction-parameters"
