@@ -61,7 +61,18 @@ function App() {
       <Header />
       <div className="container" style={{ display: 'flex', minHeight: '100vh' }}>
         <aside style={{ minWidth: 220, maxWidth: 280, background: '#f7f7f7', padding: '32px 8px 16px 8px', boxShadow: '2px 0 8px #eee', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          {/* Auctions menu remains here */}
+          {/* Home menu item at the top */}
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, width: '100%' }}>
+            <a
+              href="/"
+              style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}
+              onClick={() => {
+                setSelectedCounty("");
+                setSelectedSaleType("");
+              }}
+            >Home</a>
+          </nav>
+          {/* Auctions menu */}
           <AuctionsMenu onSelectReport={(county, saleType) => {
             setSelectedCounty(county);
             setSelectedSaleType(saleType);
@@ -100,14 +111,6 @@ function App() {
             </div>
           </div>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, width: '100%' }}>
-            <a
-              href="/"
-              style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}
-              onClick={() => {
-                setSelectedCounty("");
-                setSelectedSaleType("");
-              }}
-            >Home</a>
             <a
               href="/auctions"
               style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}
