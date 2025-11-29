@@ -9,6 +9,7 @@ import AuctionsPanel from "./pages/AuctionsPanel";
 import Header from "./Header";
 import reactLogo from "./assets/react.svg";
 import GoogleAuthButton from "./GoogleAuthButton";
+import GlobalParameterTable from "./components/GlobalParameterTable";
 import "./App.css";
 
 // SalesMenu: Head menu item for Sales that toggles the counties menu
@@ -72,12 +73,29 @@ function App() {
                 setSelectedCounty("");
                 setSelectedSaleType("");
               }}
-            >Auction Parameters</a>
+            >Auctions</a>
             <AuctionsMenu onSelectReport={(county, saleType) => {
               console.log('SIDEBAR SELECT:', { county, saleType });
               setSelectedCounty(county);
               setSelectedSaleType(saleType);
             }} />
+            <div style={{ marginTop: 18, marginBottom: 2, fontWeight: 700, color: '#7a5c1c', fontSize: 15, letterSpacing: 0.5 }}>Administration</div>
+            <a
+              href="/auction-parameters"
+              style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 16, marginLeft: 12 }}
+              onClick={() => {
+                setSelectedCounty("");
+                setSelectedSaleType("");
+              }}
+            >Auction Parameters</a>
+            <a
+              href="/global-parameters"
+              style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 16, marginLeft: 12 }}
+              onClick={() => {
+                setSelectedCounty("");
+                setSelectedSaleType("");
+              }}
+            >Global Parameters</a>
           </nav>
           {/* AdSense Ad below menu */}
           <div style={{ width: '100%', minWidth: 100, height: 120, background: '#f7f7f7', border: '1px solid #eee', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#aaa', marginTop: 16 }}>
@@ -90,6 +108,8 @@ function App() {
             <main className="main-content" style={{ padding: '40px 32px 0 32px', flex: 1 }}>
               <Routes>
                 <Route path="/auctions" element={<AuctionsPanel />} />
+                <Route path="/auction-parameters" element={<AuctionsPanel />} />
+                <Route path="/global-parameters" element={<GlobalParameterTable />} />
                 <Route path="/" element={
                   reportSrc ? (
                     <div style={{ maxWidth: 1700, marginTop: 32, position: 'relative' }}>
