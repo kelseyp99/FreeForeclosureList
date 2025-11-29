@@ -1,6 +1,7 @@
 
 
 import React, { useState } from "react";
+import params from './config/params';
 import { useNavigate } from "react-router-dom";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import FloridaCountiesSidebar from "./components/FloridaCountiesSidebar";
@@ -10,6 +11,7 @@ import Header from "./Header";
 import reactLogo from "./assets/react.svg";
 import GoogleAuthButton from "./GoogleAuthButton";
 import GlobalParameterTable from "./components/GlobalParameterTable";
+import SalesReportPanel from "./components/SalesReportPanel";
 import "./App.css";
 
 // SalesMenu: Head menu item for Sales that toggles the counties menu
@@ -46,6 +48,8 @@ function AuctionsMenu({ onSelectReport }) {
 function App() {
   const [selectedCounty, setSelectedCounty] = useState("");
   const [selectedSaleType, setSelectedSaleType] = useState("");
+  const [ownerAssocFilter, setOwnerAssocFilter] = useState('include'); // 'exclude', 'include', 'only'
+  const ownerAssocWords = (params.owner_assoc_words || '').split(',').map(w => w.trim()).filter(Boolean);
   const reportSrc = selectedCounty && selectedSaleType
     ? `/reports/sales_report_${selectedCounty.toLowerCase().replace(/\s/g, "_")}_${selectedSaleType.toLowerCase().replace(/\s/g, "")}.html`
     : null;
@@ -57,6 +61,44 @@ function App() {
       <Header />
       <div className="container" style={{ display: 'flex', minHeight: '100vh' }}>
         <aside style={{ minWidth: 220, maxWidth: 280, background: '#f7f7f7', padding: '32px 8px 16px 8px', boxShadow: '2px 0 8px #eee', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          {/* Auctions menu remains here */}
+          <AuctionsMenu onSelectReport={(county, saleType) => {
+            setSelectedCounty(county);
+            setSelectedSaleType(saleType);
+          }} />
+          {/* Owner Associations Filter below Auctions */}
+          <div style={{ margin: '18px 0 0 0', width: '100%' }}>
+            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Certificate Holder Type</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontWeight: 400, fontSize: 15 }}>
+                <input
+                  type="radio"
+                  name="ownerAssocFilter"
+                  value="exclude"
+                  checked={ownerAssocFilter === 'exclude'}
+                  onChange={() => setOwnerAssocFilter('exclude')}
+                /> Exclude Owner Associations
+              </label>
+              <label style={{ fontWeight: 400, fontSize: 15 }}>
+                <input
+                  type="radio"
+                  name="ownerAssocFilter"
+                  value="include"
+                  checked={ownerAssocFilter === 'include'}
+                  onChange={() => setOwnerAssocFilter('include')}
+                /> Include Owner Associations
+              </label>
+              <label style={{ fontWeight: 400, fontSize: 15 }}>
+                <input
+                  type="radio"
+                  name="ownerAssocFilter"
+                  value="only"
+                  checked={ownerAssocFilter === 'only'}
+                  onChange={() => setOwnerAssocFilter('only')}
+                /> Show Only Owner Associations
+              </label>
+            </div>
+          </div>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, width: '100%' }}>
             <a
               href="/"
@@ -107,9 +149,6 @@ function App() {
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <main className="main-content" style={{ padding: '40px 32px 0 32px', flex: 1 }}>
               <Routes>
-                <Route path="/auctions" element={<AuctionsPanel />} />
-                <Route path="/auction-parameters" element={<AuctionsPanel />} />
-                <Route path="/global-parameters" element={<GlobalParameterTable />} />
                 <Route path="/" element={
                   reportSrc ? (
                     <div style={{ maxWidth: 1700, marginTop: 32, position: 'relative' }}>
@@ -144,16 +183,10 @@ function App() {
                     </div>
                   )
                 } />
-                {/* Removed redundant Pasco route. All report rendering is handled by main panel. */}
+                <Route path="/auctions" element={<AuctionsPanel />} />
+                <Route path="/global-parameters" element={<GlobalParameterTable />} />
               </Routes>
             </main>
-            <footer className="footer">
-              <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                ©{new Date().getFullYear()} by FreeForeclosureList.net
-                <img src={reactLogo} alt="React" style={{height: 24, width: 24, margin: '0 4px'}} />
-                - Built with React
-              </div>
-            </footer>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 24, minWidth: 160, marginLeft: 12, marginTop: 40 }}>
             {/* AdSense Ad 1 */}

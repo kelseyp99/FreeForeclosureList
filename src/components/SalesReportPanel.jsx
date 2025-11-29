@@ -18,13 +18,12 @@ function parseTableFromHTML(html) {
   return { headers, rows };
 }
 
-const SalesReportPanel = ({ county = "pasco", saleType = "foreclosure" }) => {
+const SalesReportPanel = ({ county = "pasco", saleType = "foreclosure", ownerAssocFilter = 'include' }) => {
   const [tableData, setTableData] = useState({ headers: [], rows: [] });
   const [sortCol, setSortCol] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [ownerAssocFilter, setOwnerAssocFilter] = useState('include'); // include, exclude, only
 
   // Compose the report filename
   const reportFile = `/reports/sales_report_${county.toLowerCase().replace(/\s/g, "_")}_${saleType.toLowerCase().replace(/\s/g, "")}.html`;
@@ -114,28 +113,7 @@ const SalesReportPanel = ({ county = "pasco", saleType = "foreclosure" }) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start' }}>
-      {/* Sidebar Filters */}
-      <div style={{ minWidth: 220, maxWidth: 260, background: '#f7f7f7', border: '1px solid #eee', borderRadius: 8, marginRight: 18, padding: 16, height: 1200 }}>
-        <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 12 }}>Filters</div>
-        <div style={{ marginBottom: 18 }}>
-          <div style={{ fontWeight: 600, marginBottom: 6 }}>Owner Associations</div>
-          <div>
-            <label style={{ display: 'block', marginBottom: 4 }}>
-              <input type="radio" name="ownerAssoc" value="include" checked={ownerAssocFilter === 'include'} onChange={() => setOwnerAssocFilter('include')} /> Include
-            </label>
-            <label style={{ display: 'block', marginBottom: 4 }}>
-              <input type="radio" name="ownerAssoc" value="exclude" checked={ownerAssocFilter === 'exclude'} onChange={() => setOwnerAssocFilter('exclude')} /> Exclude
-            </label>
-            <label style={{ display: 'block', marginBottom: 4 }}>
-              <input type="radio" name="ownerAssoc" value="only" checked={ownerAssocFilter === 'only'} onChange={() => setOwnerAssocFilter('only')} /> Show Only
-            </label>
-          </div>
-          <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>
-            Words: {params.owner_assoc_words}
-          </div>
-        </div>
-        {/* Add more filters here as needed */}
-      </div>
+  {/* Sidebar Filters removed: now controlled by App sidebar */}
       {/* Main Table */}
       <div className="report-scroll-container" style={{ maxWidth: 1700, height: 1200, overflow: 'auto', border: '1px solid #ccc', borderRadius: 8, background: '#fff', flex: 1 }}>
         <table style={{ borderCollapse: 'collapse', width: '100%' }}>
