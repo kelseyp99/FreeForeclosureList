@@ -1,18 +1,13 @@
-
-
 import React, { useState } from "react";
 import params from './config/params';
 import { useNavigate } from "react-router-dom";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import FloridaCountiesSidebar from "./components/FloridaCountiesSidebar";
-import PascoCounty from "./pages/PascoCounty";
 import AuctionsPanel from "./pages/AuctionsPanel";
 import Header from "./Header";
-import reactLogo from "./assets/react.svg";
-import GoogleAuthButton from "./GoogleAuthButton";
 import GlobalParameterTable from "./components/GlobalParameterTable";
 import SalesReportPanel from "./components/SalesReportPanel";
 import "./App.css";
+import { getStatusFilterArray } from "./utils/statusFilter";
 
 // SalesMenu: Head menu item for Sales that toggles the counties menu
 
@@ -49,12 +44,18 @@ function App() {
   const [selectedCounty, setSelectedCounty] = useState("");
   const [selectedSaleType, setSelectedSaleType] = useState("");
   const [ownerAssocFilter, setOwnerAssocFilter] = useState('include'); // 'exclude', 'include', 'only'
+  const [statusFilter, setStatusFilter] = useState(() => {
+    try {
+      let val = JSON.parse(localStorage.getItem('ffl_filter_status') || '[]');
+      if (typeof val === 'string') val = val ? [val] : [];
+      if (Array.isArray(val)) return val.filter(Boolean).map(String);
+      return [];
+    } catch { return []; }
+  });
   const ownerAssocWords = (params.owner_assoc_words || '').split(',').map(w => w.trim()).filter(Boolean);
   const reportSrc = selectedCounty && selectedSaleType
     ? `/reports/sales_report_${selectedCounty.toLowerCase().replace(/\s/g, "_")}_${selectedSaleType.toLowerCase().replace(/\s/g, "")}.html`
     : null;
-  console.log('APP STATE:', { selectedCounty, selectedSaleType, reportSrc });
-
   const navigate = useNavigate();
   return (
     <>
@@ -136,20 +137,21 @@ function App() {
                 Filter Status:
                 <select
                   multiple
-                  size={3}
+                  size={4}
                   style={{ minWidth: 160, maxWidth: 220, fontSize: '1em', marginTop: 4 }}
-                  value={(() => {
-                    try {
-                      return JSON.parse(localStorage.getItem('ffl_filter_status') || '[]');
-                    } catch { return []; }
-                  })()}
+                  value={statusFilter}
                   onChange={e => {
                     const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
+                    setStatusFilter(selected);
                     localStorage.setItem('ffl_filter_status', JSON.stringify(selected));
                     window.dispatchEvent(new Event('storage'));
                   }}
                 >
-                  {/* Status options will be injected by sortable-table.js on first load, so we leave this empty for now */}
+                  <option value="Accepting Proxy">Accepting Proxy</option>
+                  <option value="Canceled">Canceled</option>
+                  <option value="Presale">Presale</option>
+                  <option value="Running">Running</option>
+                  <option value="Sold">Sold</option>
                 </select>
                 <span style={{ fontSize: 12, color: '#888', marginTop: 2 }}>(Hold Ctrl/Cmd to select multiple)</span>
               </label>
@@ -174,66 +176,22 @@ function App() {
               }}
             >Global Parameters</a>
           </nav>
-          {/* AdSense Ad below menu */}
-          <div style={{ width: '100%', minWidth: 100, height: 120, background: '#f7f7f7', border: '1px solid #eee', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#aaa', marginTop: 16 }}>
-            AdSense Ad (Sidebar)
-          </div>
         </aside>
-
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'row' }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <main className="main-content" style={{ padding: '40px 32px 0 32px', flex: 1 }}>
-              <Routes>
-                <Route path="/" element={
-                  reportSrc ? (
-                    <div style={{ maxWidth: 1700, marginTop: 32, position: 'relative' }}>
-                      <iframe
-                        src={reportSrc}
-                        title="County Sales Report"
-                        style={{ width: '100%', minHeight: 1200, border: '1px solid #ccc', borderRadius: 8 }}
-                      />
-                      {/* Debug overlay for iframe src */}
-                      <div style={{
-                        position: 'absolute',
-                        top: 0,
-                        right: 0,
-                        background: 'rgba(255,255,0,0.85)',
-                        color: '#222',
-                        padding: '4px 10px',
-                        fontSize: 13,
-                        borderBottomLeftRadius: 8,
-                        zIndex: 10,
-                        pointerEvents: 'none',
-                      }}>
-                        <strong>iframe src:</strong> {reportSrc}
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ maxWidth: 900 }}>
-                      <strong>Hello. We're FreeForeclosureList.net</strong>
-                      <p>Welcome to FreeForeclosureList.net, your premier destination for accessing comprehensive real estate distressed property listings. Powered by cutting-edge AI and Robotic Process Automation, we revolutionize the way you explore foreclosure properties. Unlike traditional county foreclosure lists, we go above and beyond by curating additional insights sourced from the web, providing you with a one-stop solution for all your real estate investment needs.</p>
-                      <p>Understanding the demands of modern investors, we offer invaluable features such as direct links to various real estate platforms, county property appraisers, and clerks of court. Our platform delivers more than just basic information; we provide estimated property values, judgment amounts for foreclosure cases, and opening bid amounts for Tax Deed sales. This empowers you to gauge potential equity and focus your efforts efficiently. By identifying properties where lenders are likely to halt bidding at the judgment amount, we save you valuable time. Moreover, you may discover opportunities to connect with property owners who owe less than the judgment amount, opening avenues for direct purchase.</p>
-                      <p>In addition to our comprehensive foreclosure data, we also offer exclusive access to sales information from counties, including proprietary and hard-to-obtain lists.</p>
-                      <p><em>Please note that FreeForeclosureList.net is currently in its prototype stage. Expect significant enhancements and updates in the coming months and weeks as we strive to provide you with an unparalleled user experience.</em></p>
-                    </div>
-                  )
-                } />
-                <Route path="/auctions" element={<AuctionsPanel />} />
-                <Route path="/global-parameters" element={<GlobalParameterTable />} />
-              </Routes>
-            </main>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 24, minWidth: 160, marginLeft: 12, marginTop: 40 }}>
-            {/* AdSense Ad 1 */}
-            <div style={{ width: 160, height: 250, background: '#f7f7f7', border: '1px solid #eee', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#aaa' }}>
-              AdSense Ad 1
+        {/* Main content area */}
+        <main className="main-content" style={{ padding: '40px 32px 0 32px', flex: 1 }}>
+          {/* Main iframe report view */}
+          {reportSrc ? (
+            <iframe
+              title="Sales Report"
+              src={reportSrc}
+              style={{ width: '100%', minHeight: 800, border: 'none', background: '#fff', borderRadius: 8, boxShadow: '0 2px 12px #eee' }}
+            />
+          ) : (
+            <div style={{ color: '#888', fontSize: 18, marginTop: 80, textAlign: 'center' }}>
+              Select a county and sale type to view a report.
             </div>
-            {/* AdSense Ad 2 */}
-            <div style={{ width: 160, height: 250, background: '#f7f7f7', border: '1px solid #eee', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#aaa' }}>
-              AdSense Ad 2
-            </div>
-          </div>
-        </div>
+          )}
+        </main>
       </div>
     </>
   );
