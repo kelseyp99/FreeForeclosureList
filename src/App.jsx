@@ -111,14 +111,6 @@ function App() {
             </div>
           </div>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, width: '100%' }}>
-            <a
-              href="/auctions"
-              style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 17 }}
-              onClick={() => {
-                setSelectedCounty("");
-                setSelectedSaleType("");
-              }}
-            >Auctions</a>
             <div style={{ marginTop: 18, marginBottom: 2, fontWeight: 700, color: '#7a5c1c', fontSize: 15, letterSpacing: 0.5 }}>Administration</div>
             <a
               href="/auction-parameters"
