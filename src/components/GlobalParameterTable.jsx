@@ -29,7 +29,7 @@ export default function GlobalParameterTable() {
 
   async function fetchParams() {
     setLoading(true);
-    const q = query(collection(db, 'parameter'), orderBy(sortCol, sortDir));
+  const q = query(collection(db, 'parameters'), orderBy(sortCol, sortDir));
     const querySnapshot = await getDocs(q);
     const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setParams(data);
@@ -47,19 +47,19 @@ export default function GlobalParameterTable() {
   }
 
   async function saveEdit() {
-    const ref = doc(db, 'parameter', editing);
+  const ref = doc(db, 'parameters', editing);
     await updateDoc(ref, form);
     setEditing(null);
     fetchParams();
   }
 
   async function handleDelete(id) {
-    await deleteDoc(doc(db, 'parameter', id));
+  await deleteDoc(doc(db, 'parameters', id));
     fetchParams();
   }
 
   async function handleAdd() {
-    await addDoc(collection(db, 'parameter'), form);
+  await addDoc(collection(db, 'parameters'), form);
     setForm({ param: '', paramValue: '' });
     fetchParams();
   }
