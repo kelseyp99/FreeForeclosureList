@@ -409,6 +409,8 @@ def testAll():
     print(f"Upload and deploy result: {upload_result}")
     exit(0)
 
+    
+
 def mark_county_sale_type_excluded(county, sale_type):
     """
     Sets processForeclosure or processTaxDeed to False for the given county and sale_type in auction_parameters.
@@ -440,6 +442,23 @@ def backup_to_dropbox():
     except Exception as e:
         print(f"[ERROR] Could not copy to Dropbox: {e}")
 
+
+
+def buildAndUpload(county, sale_type):
+    print("=== auction_utils.py is running ===")
+    csv_path = f"/Users/tinman/Downloads/QuickSearch.csv"
+    result = process_quicksearch_to_auctions(county, sale_type, csv_path)
+    print(f"Processed QuickSearch: {result}")
+    # Generate report from Firestore
+    print(f"[DEBUG] Generating report for county='{county}', sale_type='{sale_type}'")
+    output_path = generate_html_report_from_firestore(county, sale_type)
+    print(f"[DEBUG] Generated report: {output_path}")
+    # Upload report and deploy
+    upload_result = upload_report_and_mark_updated(output_path, county, sale_type)
+    print(f"Upload and deploy result: {upload_result}")
+    exit(0)
+
+
 import sys
 def arg(n):
     try:
@@ -460,7 +479,8 @@ if __name__ == "__main__":
     elif arg(1) == "testAll":
         testAll()
     elif arg(1) == "upload_to_dropbox":
-        backup_to_dropbox
+        print("copying to dropbox...")
+        backup_to_dropbox()
     else:
         # Default action if no or unknown argument is given
         testAll()

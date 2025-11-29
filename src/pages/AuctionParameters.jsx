@@ -93,6 +93,16 @@ export default function AuctionParametersPage({ tableMinWidth = 700 }) {
   const extraKeys = allKeys.filter(k => !COLUMN_ORDER.includes(k));
   const orderedKeys = [...COLUMN_ORDER, ...extraKeys];
 
+  function renderCellValue(val) {
+    // Firestore Timestamp object: {seconds, nanoseconds}
+    if (val && typeof val === 'object' && val.seconds !== undefined && val.nanoseconds !== undefined) {
+      // Convert to JS Date
+      const date = new Date(val.seconds * 1000);
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    }
+    return val == null ? '' : String(val);
+  }
+
   return (
     <div style={{ padding: 0 }}>
       <div style={{
@@ -147,7 +157,7 @@ export default function AuctionParametersPage({ tableMinWidth = 700 }) {
                     {editing === param.id ? (
                       <input name={key} value={form[key] || ''} onChange={handleChange} />
                     ) : (
-                      param[key] || ''
+                      renderCellValue(param[key])
                     )}
                   </td>
                 ))}
