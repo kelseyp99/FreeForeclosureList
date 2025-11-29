@@ -62,6 +62,16 @@ const SalesReportPanel = ({ county = "pasco", saleType = "foreclosure" }) => {
     const sorted = [...rows].sort((a, b) => {
       const valA = a[sortCol] || "";
       const valB = b[sortCol] || "";
+      // Check if the column is 'Sale Date' or 'Add Date' (case-insensitive)
+      const header = (tableData.headers[sortCol] || '').toLowerCase();
+      if (header === 'sale date' || header === 'add date') {
+        // Try to parse as date (MM/DD/YYYY or YYYY-MM-DD)
+        const dateA = Date.parse(valA);
+        const dateB = Date.parse(valB);
+        if (!isNaN(dateA) && !isNaN(dateB)) {
+          return sortDir === 'asc' ? dateA - dateB : dateB - dateA;
+        }
+      }
       // Try numeric sort if both values are numbers
       const numA = parseFloat(valA.replace(/[^\d.\-]/g, ""));
       const numB = parseFloat(valB.replace(/[^\d.\-]/g, ""));

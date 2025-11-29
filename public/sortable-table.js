@@ -3,32 +3,43 @@
 // Usage: just include this script in your HTML. All <th> in <thead> become sortable.
 
 
-(function() {
-  function sortTable(table, col, type, dir) {
-    const tbody = table.tBodies[0];
-    const rows = Array.from(tbody.rows);
-    const compare = (a, b) => {
-      let v1 = a.cells[col].textContent.trim();
-      let v2 = b.cells[col].textContent.trim();
-      if (type === 'number') {
-        v1 = parseFloat(v1.replace(/[^\d.\-]/g, '')) || 0;
-        v2 = parseFloat(v2.replace(/[^\d.\-]/g, '')) || 0;
+function sortTable(table, col, type, dir) {
+  const tbody = table.tBodies[0];
+  const rows = Array.from(tbody.rows);
+  // Detect if this column is a date column by header
+  const ths = table.querySelectorAll('thead th');
+  const header = ths[col]?.textContent.trim().toLowerCase();
+  const isDateCol = header === 'sale date' || header === 'add date';
+  const compare = (a, b) => {
+    let v1 = a.cells[col].getAttribute('data-sort') || a.cells[col].textContent.trim();
+    let v2 = b.cells[col].getAttribute('data-sort') || b.cells[col].textContent.trim();
+    if (isDateCol) {
+      // Try to parse as date
+      const d1 = Date.parse(v1);
+      const d2 = Date.parse(v2);
+      if (!isNaN(d1) && !isNaN(d2)) {
+        return dir === 'asc' ? d1 - d2 : d2 - d1;
       }
-      return dir === 'asc' ? (v1 > v2 ? 1 : v1 < v2 ? -1 : 0) : (v1 < v2 ? 1 : v1 > v2 ? -1 : 0);
-    };
-      // Only sort main data rows (skip .ffl-notes-row)
-      const allRows = Array.from(tbody.rows);
-      const dataRows = allRows.filter(row => !row.classList.contains('ffl-notes-row'));
-      dataRows.sort(compare);
-      // Re-attach each data row and its following .ffl-notes-row (if present)
-      dataRows.forEach(row => {
-        tbody.appendChild(row);
-        const next = row.nextElementSibling;
-        if (next && next.classList.contains('ffl-notes-row')) {
-          tbody.appendChild(next);
-        }
-      });
-  }
+    }
+    if (type === 'number') {
+      v1 = parseFloat(v1.replace(/[^\d.\-]/g, '')) || 0;
+      v2 = parseFloat(v2.replace(/[^\d.\-]/g, '')) || 0;
+    }
+    return dir === 'asc' ? (v1 > v2 ? 1 : v1 < v2 ? -1 : 0) : (v1 < v2 ? 1 : v1 > v2 ? -1 : 0);
+  };
+  // Only sort main data rows (skip .ffl-notes-row)
+  const allRows = Array.from(tbody.rows);
+  const dataRows = allRows.filter(row => !row.classList.contains('ffl-notes-row'));
+  dataRows.sort(compare);
+  // Re-attach each data row and its following .ffl-notes-row (if present)
+  dataRows.forEach(row => {
+    tbody.appendChild(row);
+    const next = row.nextElementSibling;
+    if (next && next.classList.contains('ffl-notes-row')) {
+      tbody.appendChild(next);
+    }
+  });
+}
 
   function detectType(val) {
     return /^\d+[.,\d]*$/.test(val.replace(/[^\d.\-]/g, '')) ? 'number' : 'string';
@@ -394,4 +405,3 @@
   document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('table').forEach(makeTableSortableAndFilterable);
   });
-})();
