@@ -46,7 +46,7 @@ def process_quicksearch_to_auctions( county, sale_type, csv_path):
         reader = csv.DictReader(f)
         reader.fieldnames = [fn.strip() for fn in reader.fieldnames]
         for row in reader:
-            row = {k.strip(): v for k, v in row.items()}
+            row = {k.strip(): v for k, v in row.items() if k is not None}
             total += 1
             casenumber = row.get("Case Number") or row.get("CaseNumber") or row.get("CaseNo")
             if not casenumber:
@@ -100,6 +100,11 @@ def get_next_sale(min_hours=0, counties=None):
         if isinstance(counties, str):
             counties = [counties]
         counties = set(c.strip().lower() for c in counties)
+        print(f"[DEBUG] Input counties (normalized): {counties}")
+
+    # Print all Firestore county doc IDs (normalized)
+    all_firestore_counties = set(doc.id.strip().lower() for doc in docs)
+    print(f"[DEBUG] Firestore counties (normalized): {all_firestore_counties}")
 
     # Helper: decide whether we should process this county/sale_type
     def should_process(data, sale_type):
@@ -125,7 +130,7 @@ def get_next_sale(min_hours=0, counties=None):
         if should_process(data, "Tax Deed") and not td_time and taxdeed_url:
             return county, "Tax Deed", taxdeed_url
 
-    # Second loop: find oldest last_update among eligible sale types
+    # Second loop: find oldest last_update among eligible sale types (RESTRICTED TO COUNTIES)
     oldest_candidate = None
     oldest_time = None
     for doc in docs:
@@ -142,7 +147,6 @@ def get_next_sale(min_hours=0, counties=None):
             ("Foreclosure", fc_time, foreclosure_url),
             ("Tax Deed", td_time, taxdeed_url)
         ]:
-            # Skip sale types that are not configured to be processed
             if not should_process(data, sale_type):
                 continue
             if not last_update or not url:
@@ -157,6 +161,8 @@ def get_next_sale(min_hours=0, counties=None):
 
     if oldest_candidate and oldest_candidate[2]:
         return oldest_candidate
+    # If no candidate found in the specified counties, return None
+    print(f"[DEBUG] No eligible sales found in specified counties: {counties}. Returning None.")
     return None, None, None
 
 def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dist/reports'):
@@ -332,8 +338,8 @@ def generate_html_report_from_sales(sales, county, sales_type):
         except Exception:
             return val
 
-    for row in sales:
-        html += '<tr><td></td>'  # Always prepend checkbox column
+    for idx, row in enumerate(sales):
+        html += f'<tr><td><input type="checkbox" class="row-select-checkbox" data-row="{idx}" /></td>'  # Checkbox column
         for field, _ in FIELD_ORDER:
             cell = row.get(field, "")
             if field == "Address":
@@ -363,9 +369,23 @@ def generate_html_report_from_sales(sales, county, sales_type):
             else:
                 html += f'<td>{cell}</td>'
         html += '</tr>\n'
-    html += '        </tbody>\n      </table>\n    </div>'
-    html += '\n<script src="/sortable-table.js"></script>'
-    html += '\n</body>\n</html>'
+        html += '        </tbody>\n      </table>\n    </div>'
+        html += '''\n<script src="/sortable-table.js"></script>
+<script>
+// Toggle all row checkboxes when header checkbox is clicked
+document.addEventListener('DOMContentLoaded', function() {
+    var headerCheckbox = document.getElementById('header-show-selected');
+    var rowCheckboxes = document.querySelectorAll('.row-select-checkbox');
+    if (headerCheckbox) {
+        headerCheckbox.addEventListener('change', function() {
+            rowCheckboxes.forEach(function(cb) {
+                cb.checked = headerCheckbox.checked;
+            });
+        });
+    }
+});
+</script>'''
+        html += '\n</body>\n</html>'
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html)
     print(f'Report generated: {output_path}')
@@ -400,10 +420,11 @@ def refreshSales(counties=None, sales_type=None):
     # get the next sale to process
     if counties:
         county, sale_type, sale_list_url = get_next_sale(min_hours=min_hours, counties=counties)
-    elif sales_type:
-        county, sale_type, sale_list_url = None, sales_type, None
     else:
         county, sale_type, sale_list_url = get_next_sale(min_hours=min_hours)
+    if county is None:
+        print("[INFO] No eligible sales found in the specified counties. Exiting.")
+        return
     print(county)
     print(sale_type)
     print(sale_list_url)
@@ -493,15 +514,17 @@ if __name__ == "__main__":
         output_path = arg(4)
         print(upload_report_and_mark_updated(output_path, county, sales_type))
     elif arg(1) == "refreshSales":
-        # Support: python auction_utils.py refreshSales Orange,Pasco
-        counties_arg = arg(2)
+        # Usage: python auction_utils.py refreshSales Miami-Dade;Broward;Palm Beach;Monroe
+        counties_arg = " ".join(sys.argv[2:]) if len(sys.argv) > 2 else None
         counties = None
         if counties_arg:
-            counties = [c.strip() for c in counties_arg.split(",") if c.strip()]
+            counties = [c.strip() for c in counties_arg.split(";") if c.strip()]
+            if len(counties) == 1:
+                print("[WARNING] Only one county detected. If you intended multiple, wrap the list in quotes, e.g. \"Miami-Dade;Broward;Palm Beach;Monroe\"")
         refreshSales(counties=counties)
     elif arg(1) == "upload_to_dropbox":
         print("copying to dropbox...")
         backup_to_dropbox()
     else:
         # Default action if no or unknown argument is given
-        refreshSales()
+        refreshSales(counties=None)
