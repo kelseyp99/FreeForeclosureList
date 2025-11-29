@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import params from './config/params';
 import { useNavigate } from "react-router-dom";
 import FloridaCountiesSidebar from "./components/FloridaCountiesSidebar";
@@ -8,6 +8,7 @@ import GlobalParameterTable from "./components/GlobalParameterTable";
 import SalesReportPanel from "./components/SalesReportPanel";
 import "./App.css";
 import { getStatusFilterArray } from "./utils/statusFilter";
+import { analytics, logEvent } from './firebase';
 
 // SalesMenu: Head menu item for Sales that toggles the counties menu
 
@@ -57,6 +58,24 @@ function App() {
     ? `/reports/sales_report_${selectedCounty.toLowerCase().replace(/\s/g, "_")}_${selectedSaleType.toLowerCase().replace(/\s/g, "")}.html`
     : null;
   const navigate = useNavigate();
+
+  function handleExternalClick(e) {
+    // Only track left-clicks on anchor tags with target _blank
+    if (e.target.tagName === 'A' && e.target.target === '_blank' && e.target.href && analytics) {
+      logEvent(analytics, 'click_through', {
+        url: e.target.href,
+        text: e.target.innerText || undefined,
+        location: window.location.pathname
+      });
+    }
+  }
+
+  // Add event listener for click-through tracking
+  useEffect(() => {
+    document.addEventListener('click', handleExternalClick);
+    return () => document.removeEventListener('click', handleExternalClick);
+  }, []);
+
   return (
     <>
       <Header />
@@ -82,7 +101,7 @@ function App() {
           <div style={{ margin: '18px 0 0 0', width: '100%' }}>
             <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Certificate Holder Type</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16 }}>
-              <label style={{ fontWeight: 400, fontSize: 15 }}>
+              <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c' }}>
                 <input
                   type="radio"
                   name="ownerAssocFilter"
@@ -91,7 +110,7 @@ function App() {
                   onChange={() => setOwnerAssocFilter('exclude')}
                 /> Exclude Owner Associations
               </label>
-              <label style={{ fontWeight: 400, fontSize: 15 }}>
+              <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c' }}>
                 <input
                   type="radio"
                   name="ownerAssocFilter"
@@ -100,7 +119,7 @@ function App() {
                   onChange={() => setOwnerAssocFilter('include')}
                 /> Include Owner Associations
               </label>
-              <label style={{ fontWeight: 400, fontSize: 15 }}>
+              <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c' }}>
                 <input
                   type="radio"
                   name="ownerAssocFilter"
@@ -113,7 +132,7 @@ function App() {
             {/* Foreclosure Report Filters */}
             <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Foreclosure Report Filters</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ fontWeight: 400, fontSize: 15 }}>
+              <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c' }}>
                 <input
                   type="checkbox"
                   checked={localStorage.getItem('ffl_filter_timeshare') === '1'}
@@ -123,7 +142,7 @@ function App() {
                   }}
                 /> Hide Timeshare Parcel IDs
               </label>
-              <label style={{ fontWeight: 400, fontSize: 15 }}>
+              <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c' }}>
                 <input
                   type="checkbox"
                   checked={localStorage.getItem('ffl_filter_blank') === '1'}
@@ -133,7 +152,7 @@ function App() {
                   }}
                 /> Hide Blank Parcel IDs
               </label>
-              <label style={{ fontWeight: 400, fontSize: 15, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                 Filter Status:
                 <select
                   multiple
