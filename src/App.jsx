@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import params from './config/params';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Routes, Route } from "react-router-dom";
 import FloridaCountiesSidebar from "./components/FloridaCountiesSidebar";
 import AuctionsPanel from "./pages/AuctionsPanel";
+import AuctionParametersPage from "./pages/AuctionParameters";
 import Header from "./Header";
 import GlobalParameterTable from "./components/GlobalParameterTable";
 import SalesReportPanel from "./components/SalesReportPanel";
@@ -40,6 +41,8 @@ function AuctionsMenu({ onSelectReport }) {
     </div>
   );
 }
+
+
 
 function App() {
   const [selectedCounty, setSelectedCounty] = useState("");
@@ -216,4 +219,14 @@ function App() {
   );
 }
 
-export default App;
+function RoutedApp() {
+  return (
+    <Routes>
+      <Route path="/auction-parameters" element={<AuctionsPanel />} />
+      <Route path="/global-parameters" element={<GlobalParameterTable />} />
+      <Route path="/*" element={<App />} />
+    </Routes>
+  );
+}
+
+export default RoutedApp;
