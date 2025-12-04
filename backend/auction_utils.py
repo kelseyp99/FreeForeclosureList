@@ -99,7 +99,7 @@ def get_next_sale(min_hours=0, counties=None):
     Loops through auction_parameters to find the first blank (missing) Foreclosure or Tax Deed last update,
     or, if none are blank, returns the one with the oldest timestamp.
     If 'counties' is provided, restricts to those counties (case-insensitive, accepts str or list).
-    Returns (county, sale_type, url).
+    Returns (county, sale_type, url) for manual use, or dict for JSON output if requested.
     """
     from datetime import datetime, timezone
     
@@ -178,6 +178,16 @@ def get_next_sale(min_hours=0, counties=None):
     print(f"[DEBUG] No eligible sales found in specified counties: {counties}. Returning None.")
     return None, None, None
 
+def get_next_sale_json(min_hours=0, counties=None):
+    county, sale_type, url = get_next_sale(min_hours=min_hours, counties=counties)
+    import json
+    result = {
+        "county": county,
+        "sale_type": sale_type,
+        "url": url
+    }
+    return json.dumps(result)
+
 def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dist/reports'):
     """
     Ensures the report HTML exists, copies it to public/reports for deployment,
@@ -210,11 +220,21 @@ def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dis
     build_error = ""
 
     # 3. Update Firestore last update for the correct sale type field
+    # Accept county and sale_type as either string or JSON dict
+    import json
+    if isinstance(county, str) and county.strip().startswith('{'):
+        # If county is a JSON string, parse it
+        try:
+            county_json = json.loads(county)
+            county = county_json.get('county')
+            sale_type = county_json.get('sale_type')
+        except Exception:
+            pass
     county_doc = db.collection("auction_parameters").document(county)
     now = datetime.datetime.utcnow()
-    if sale_type.lower() == "foreclosure":
+    if sale_type and sale_type.lower() == "foreclosure":
         update_data = {"ForeclosureLastUpdate": now}
-    elif sale_type.lower() == "tax deed":
+    elif sale_type and sale_type.lower() == "tax deed":
         update_data = {"TaxDeedLastUpdate": now}
     else:
         update_data = {f"{sale_type}LastUpdate": now}
@@ -676,18 +696,11 @@ if __name__ == "__main__":
         # CLI wrapper for UiPath: outputs JSON that can be parsed
         # Usage: python auction_utils.py get_next_sale_cli [counties]
         # Example: python auction_utils.py get_next_sale_cli "Miami-Dade;Broward"
-        import json
         counties_arg = arg(2)
         counties = None
         if counties_arg:
             counties = [c.strip() for c in counties_arg.split(";") if c.strip()]
-        county, sale_type, url = get_next_sale(min_hours=0, counties=counties)
-        result = {
-            "county": county,
-            "sale_type": sale_type,
-            "url": url
-        }
-        print(json.dumps(result))
+        print(get_next_sale_json(min_hours=0, counties=counties))
     elif arg(1) == "refreshSales":
         # Usage: python auction_utils.py refreshSales Miami-Dade;Broward;Palm Beach;Monroe
         counties_arg = " ".join(sys.argv[2:]) if len(sys.argv) > 2 else None
