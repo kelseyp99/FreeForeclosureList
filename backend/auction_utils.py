@@ -395,17 +395,120 @@ def generate_html_report_from_sales(sales, county, sales_type):
     html += '        </tbody>\n      </table>\n    </div>'
     html += '''\n<script src="/sortable-table.js"></script>
 <script>
-// Toggle all row checkboxes when header checkbox is clicked
+// Show Selected Only functionality + localStorage filters
 document.addEventListener('DOMContentLoaded', function() {
+    var showSelectedCheckbox = document.getElementById('show-selected-static');
     var headerCheckbox = document.getElementById('header-show-selected');
     var rowCheckboxes = document.querySelectorAll('.row-select-checkbox');
+    var tableRows = document.querySelectorAll('tbody tr');
+    
+    // Find column indices
+    var headers = document.querySelectorAll('thead th');
+    var parcelIdIdx = -1;
+    var statusIdx = -1;
+    headers.forEach(function(th, idx) {
+        var text = th.textContent.trim().toLowerCase();
+        if (text === 'parcel id') parcelIdIdx = idx;
+        if (text === 'status') statusIdx = idx;
+    });
+    
+    // Function to apply all filters
+    function filterRows() {
+        var showOnlySelected = showSelectedCheckbox && showSelectedCheckbox.checked;
+        var hideTimeshare = localStorage.getItem('ffl_filter_timeshare') === '1';
+        var hideBlank = localStorage.getItem('ffl_filter_blank') === '1';
+        var statusFilterRaw = localStorage.getItem('ffl_filter_status');
+        var statusFilter = [];
+        try {
+            var parsed = JSON.parse(statusFilterRaw || '[]');
+            if (Array.isArray(parsed)) {
+                statusFilter = parsed.map(function(s) { return String(s).toLowerCase(); });
+            }
+        } catch (e) {}
+        
+        tableRows.forEach(function(row) {
+            // Skip notes rows - they'll be handled with their parent row
+            if (row.classList.contains('ffl-notes-row')) {
+                return;
+            }
+            
+            var checkbox = row.querySelector('.row-select-checkbox');
+            var show = true;
+            
+            // Show Selected Only filter
+            if (showOnlySelected && (!checkbox || !checkbox.checked)) {
+                show = false;
+            }
+            
+            // Timeshare filter
+            if (show && hideTimeshare && parcelIdIdx >= 0) {
+                var parcelCell = row.cells[parcelIdIdx];
+                if (parcelCell) {
+                    var parcelText = parcelCell.textContent.trim().toUpperCase();
+                    if (parcelText.includes('TIMESHARE')) {
+                        show = false;
+                    }
+                }
+            }
+            
+            // Blank Parcel ID filter
+            if (show && hideBlank && parcelIdIdx >= 0) {
+                var parcelCell = row.cells[parcelIdIdx];
+                if (parcelCell) {
+                    var parcelText = parcelCell.textContent.trim();
+                    if (parcelText === '' || parcelText === '-') {
+                        show = false;
+                    }
+                }
+            }
+            
+            // Status filter
+            if (show && statusFilter.length > 0 && statusIdx >= 0) {
+                var statusCell = row.cells[statusIdx];
+                if (statusCell) {
+                    var statusText = statusCell.textContent.trim().toLowerCase();
+                    if (!statusFilter.includes(statusText)) {
+                        show = false;
+                    }
+                }
+            }
+            
+            // Apply visibility to main row
+            row.style.display = show ? '' : 'none';
+            
+            // Also hide/show the associated notes row (if it exists)
+            var nextRow = row.nextElementSibling;
+            if (nextRow && nextRow.classList.contains('ffl-notes-row')) {
+                nextRow.style.display = show ? '' : 'none';
+            }
+        });
+    }
+    
+    // Listen to "Show Selected Only" checkbox
+    if (showSelectedCheckbox) {
+        showSelectedCheckbox.addEventListener('change', filterRows);
+    }
+    
+    // Listen to individual row checkboxes to update filter when selection changes
+    rowCheckboxes.forEach(function(cb) {
+        cb.addEventListener('change', filterRows);
+    });
+    
+    // Toggle all row checkboxes when header checkbox is clicked
     if (headerCheckbox) {
         headerCheckbox.addEventListener('change', function() {
             rowCheckboxes.forEach(function(cb) {
                 cb.checked = headerCheckbox.checked;
             });
+            filterRows(); // Update filter after toggling all
         });
     }
+    
+    // Listen to localStorage changes (from sidebar filters)
+    window.addEventListener('storage', filterRows);
+    
+    // Initial filter application
+    filterRows();
 });
 </script>'''
     html += '\n</body>\n</html>'
