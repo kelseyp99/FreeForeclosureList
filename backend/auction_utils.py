@@ -476,10 +476,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // Apply visibility to main row
             row.style.display = show ? '' : 'none';
             
-            // Also hide/show the associated notes row (if it exists)
+            // Handle associated notes row (if it exists)
             var nextRow = row.nextElementSibling;
             if (nextRow && nextRow.classList.contains('ffl-notes-row')) {
-                nextRow.style.display = show ? '' : 'none';
+                if (!show) {
+                    // If main row is hidden, always hide notes row
+                    nextRow.style.display = 'none';
+                }
+                // If main row is shown, don't change notes row visibility
+                // (let it stay in its current state - expanded or collapsed)
             }
         });
     }
