@@ -9,7 +9,6 @@ import GlobalParameterTable from "./components/GlobalParameterTable";
 import SalesReportPanel from "./components/SalesReportPanel";
 import "./App.css";
 import { getStatusFilterArray } from "./utils/statusFilter";
-import { analytics, logEvent } from './firebase';
 
 // SalesMenu: Head menu item for Sales that toggles the counties menu
 
@@ -48,6 +47,8 @@ function App() {
   const [selectedCounty, setSelectedCounty] = useState("");
   const [selectedSaleType, setSelectedSaleType] = useState("");
   const [ownerAssocFilter, setOwnerAssocFilter] = useState('include'); // 'exclude', 'include', 'only'
+  const [hideTimeshare, setHideTimeshare] = useState(() => localStorage.getItem('ffl_filter_timeshare') === '1');
+  const [hideBlank, setHideBlank] = useState(() => localStorage.getItem('ffl_filter_blank') === '1');
   const [statusFilter, setStatusFilter] = useState(() => {
     try {
       let val = JSON.parse(localStorage.getItem('ffl_filter_status') || '[]');
@@ -138,8 +139,9 @@ function App() {
               <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c' }}>
                 <input
                   type="checkbox"
-                  checked={localStorage.getItem('ffl_filter_timeshare') === '1'}
+                  checked={hideTimeshare}
                   onChange={e => {
+                    setHideTimeshare(e.target.checked);
                     localStorage.setItem('ffl_filter_timeshare', e.target.checked ? '1' : '0');
                     window.dispatchEvent(new Event('storage'));
                   }}
@@ -148,8 +150,9 @@ function App() {
               <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c' }}>
                 <input
                   type="checkbox"
-                  checked={localStorage.getItem('ffl_filter_blank') === '1'}
+                  checked={hideBlank}
                   onChange={e => {
+                    setHideBlank(e.target.checked);
                     localStorage.setItem('ffl_filter_blank', e.target.checked ? '1' : '0');
                     window.dispatchEvent(new Event('storage'));
                   }}

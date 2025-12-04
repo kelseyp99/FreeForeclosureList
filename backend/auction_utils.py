@@ -510,7 +510,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Listen to localStorage changes (from sidebar filters)
-    window.addEventListener('storage', filterRows);
+    // Note: storage event only fires in OTHER windows, so we need to poll
+    var lastTimeshare = localStorage.getItem('ffl_filter_timeshare');
+    var lastBlank = localStorage.getItem('ffl_filter_blank');
+    var lastStatus = localStorage.getItem('ffl_filter_status');
+    
+    setInterval(function() {
+        var currentTimeshare = localStorage.getItem('ffl_filter_timeshare');
+        var currentBlank = localStorage.getItem('ffl_filter_blank');
+        var currentStatus = localStorage.getItem('ffl_filter_status');
+        
+        if (currentTimeshare !== lastTimeshare || currentBlank !== lastBlank || currentStatus !== lastStatus) {
+            lastTimeshare = currentTimeshare;
+            lastBlank = currentBlank;
+            lastStatus = currentStatus;
+            filterRows();
+        }
+    }, 200); // Check every 200ms
+    
+    // Also refilter when window gets focus (user might have changed settings)
+    window.addEventListener('focus', filterRows);
     
     // Initial filter application
     filterRows();
