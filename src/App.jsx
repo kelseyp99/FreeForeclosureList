@@ -49,6 +49,7 @@ function App() {
   const [ownerAssocFilter, setOwnerAssocFilter] = useState('include'); // 'exclude', 'include', 'only'
   const [hideTimeshare, setHideTimeshare] = useState(() => localStorage.getItem('ffl_filter_timeshare') === '1');
   const [hideBlank, setHideBlank] = useState(() => localStorage.getItem('ffl_filter_blank') === '1');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statusFilter, setStatusFilter] = useState(() => {
     try {
       let val = JSON.parse(localStorage.getItem('ffl_filter_status') || '[]');
@@ -83,8 +84,44 @@ function App() {
   return (
     <>
       <Header />
-      <div className="container" style={{ display: 'flex', minHeight: '100vh' }}>
-        <aside style={{ minWidth: 220, maxWidth: 280, background: '#f7f7f7', padding: '32px 8px 16px 8px', boxShadow: '2px 0 8px #eee', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+      <div className="container" style={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
+        {/* Collapse/Expand Button */}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          style={{
+            position: 'fixed',
+            left: sidebarCollapsed ? 0 : 280,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: 1000,
+            background: '#f7c873',
+            border: '1px solid #e0b24d',
+            borderRadius: '0 8px 8px 0',
+            padding: '12px 6px',
+            cursor: 'pointer',
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: '#7a5c1c',
+            transition: 'left 0.3s ease'
+          }}
+          title={sidebarCollapsed ? 'Show Sidebar' : 'Hide Sidebar'}
+        >
+          {sidebarCollapsed ? '▶' : '◀'}
+        </button>
+        
+        <aside style={{ 
+          minWidth: sidebarCollapsed ? 0 : 220, 
+          maxWidth: sidebarCollapsed ? 0 : 280, 
+          width: sidebarCollapsed ? 0 : 280,
+          background: '#f7f7f7', 
+          padding: sidebarCollapsed ? 0 : '32px 8px 16px 8px', 
+          boxShadow: '2px 0 8px #eee', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'flex-start',
+          overflow: 'hidden',
+          transition: 'all 0.3s ease'
+        }}>
           {/* Home menu item at the top */}
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, width: '100%' }}>
             <a
