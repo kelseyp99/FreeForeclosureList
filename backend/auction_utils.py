@@ -1,23 +1,35 @@
-print("=== auction_utils.py is running ===")
 
-import os
-import csv
-import re
-import json
-from datetime import datetime
-from google.cloud import firestore
-from google.oauth2 import service_account
+def add(a, b):
+    return a + b
 
-# Path to your Firebase service account key
-SERVICE_ACCOUNT_PATH = "/Users/tinman/Projects/FreeForeclosureList/backend/foreclosure-15f09-firebase-adminsdk-fbsvc-0fd54751e3.json"
-credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_PATH)
-db = firestore.Client(credentials=credentials)
+
+def uipath_test():
+    """
+    Simple test function for UiPath integration. Returns a static string.
+    """
+    return "UiPath test successful!"
+
+# Global db instance - will be lazily initialized
+_db_instance = None
+
+def _get_db():
+    """Lazy-load Firestore client to avoid initialization errors when script is loaded."""
+    global _db_instance
+    if _db_instance is None:
+        from google.cloud import firestore
+        from google.oauth2 import service_account
+        SERVICE_ACCOUNT_PATH = "/Users/tinman/Projects/FreeForeclosureList/backend/foreclosure-15f09-firebase-adminsdk-fbsvc-0fd54751e3.json"
+        credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_PATH)
+        _db_instance = firestore.Client(credentials=credentials)
+    return _db_instance
 
 def process_quicksearch_to_auctions( county, sale_type, csv_path):
     import datetime
     import os
     import re
     import csv
+    
+    db = _get_db()
 
     # --- DEBUG: Print Firestore project and test write ---
     project_id = db.project
@@ -90,7 +102,8 @@ def get_next_sale(min_hours=0, counties=None):
     Returns (county, sale_type, url).
     """
     from datetime import datetime, timezone
-
+    
+    db = _get_db()
     params_ref = db.collection("auction_parameters")
     docs = list(params_ref.stream())
     now = datetime.now(timezone.utc)
@@ -174,6 +187,8 @@ def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dis
     import datetime
     import os
     import subprocess
+    
+    db = _get_db()
 
     # 1. Always copy to public/reports (for deploy)
     public_reports_dir = os.path.join(os.path.dirname(__file__), '..', 'public', 'reports')
@@ -237,6 +252,7 @@ def filter_sales(sales, county, sales_type):
 
 def generate_html_report_from_firestore(county, sales_type):
     # Uses the global db object (already created at the top of your file
+    db = _get_db()
     sales_ref = db.collection('sales')
     docs = sales_ref.stream()
     sales = [doc.to_dict() for doc in docs]
@@ -267,10 +283,11 @@ def generate_html_report_from_sales(sales, county, sales_type):
     except Exception as e:
         pa_template = None
 
+    # Field names match Firestore exactly (with spaces)
     FIELD_ORDER = [
         ("Add Date", "Add Date"),
         ("Address", "Address"),
-        ("AssessedValue", "Assessed Value"),
+        ("Assessed Value", "Assessed Value"),
         ("Case Number", "Case Number"),
         ("Certificate Holder Name", "Certificate Holder Name"),
         ("City", "City"),
@@ -278,7 +295,7 @@ def generate_html_report_from_sales(sales, county, sales_type):
         ("My Bid", "My Bid"),
         ("Opening Bid", "Opening Bid"),
         ("Parcel ID", "Parcel ID"),
-        ("PlaintiffMaxBid", "Plaintiff Max Bid"),
+        ("Plaintiff Max Bid", "Plaintiff Max Bid"),
         ("Sale Date", "Sale Date"),
         ("Status", "Status"),
         ("Zip", "Zip"),
@@ -339,9 +356,13 @@ def generate_html_report_from_sales(sales, county, sales_type):
             return val
 
     for idx, row in enumerate(sales):
+        # DEBUG: Print all keys for each row to diagnose missing fields
+        print(f"[DEBUG] Row {idx} keys: {list(row.keys())}")
         html += f'<tr><td><input type="checkbox" class="row-select-checkbox" data-row="{idx}" /></td>'  # Checkbox column
         for field, _ in FIELD_ORDER:
+            # Get cell value directly from Firestore field (with spaces)
             cell = row.get(field, "")
+            
             if field == "Address":
                 address = str(row.get("Address", "")).strip()
                 city = str(row.get("City", "")).strip()
@@ -364,13 +385,15 @@ def generate_html_report_from_sales(sales, county, sales_type):
                     html += f'<td><a href="{pa_url}" target="_blank" rel="noopener noreferrer">{parcel_id}</a></td>'
                 else:
                     html += f'<td>{parcel_id}</td>'
-            elif field in ("Final Judgment", "Opening Bid", "AssessedValue"):
+            elif field in ("Final Judgment", "Opening Bid", "Assessed Value", "Plaintiff Max Bid"):
                 html += f'<td>{format_currency(cell)}</td>'
             else:
                 html += f'<td>{cell}</td>'
         html += '</tr>\n'
-        html += '        </tbody>\n      </table>\n    </div>'
-        html += '''\n<script src="/sortable-table.js"></script>
+    
+    # Close the table and add scripts AFTER the loop
+    html += '        </tbody>\n      </table>\n    </div>'
+    html += '''\n<script src="/sortable-table.js"></script>
 <script>
 // Toggle all row checkboxes when header checkbox is clicked
 document.addEventListener('DOMContentLoaded', function() {
@@ -385,7 +408,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>'''
-        html += '\n</body>\n</html>'
+    html += '\n</body>\n</html>'
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html)
     print(f'Report generated: {output_path}')
@@ -452,6 +475,7 @@ def mark_county_sale_type_excluded(county, sale_type):
     """
     Sets processForeclosure or processTaxDeed to False for the given county and sale_type in auction_parameters.
     """
+    db = _get_db()
     field = None
     if sale_type.lower() == "foreclosure":
         field = "processForeclosure"
@@ -497,13 +521,21 @@ def buildAndUpload(county, sale_type):
 
 
 import sys
+
 def arg(n):
     try:
         return sys.argv[n]
     except IndexError:
         return None
 
+# Main entry point - only runs when script is executed directly, not when imported
 if __name__ == "__main__":
+    print("=== auction_utils.py is running ===")
+    import os
+    import csv
+    import re
+    import json
+    from datetime import datetime
     if arg(1) == "generate_html_report_from_firestore":
         county = arg(2)
         sales_type = arg(3)
@@ -513,6 +545,22 @@ if __name__ == "__main__":
         sales_type = arg(3)
         output_path = arg(4)
         print(upload_report_and_mark_updated(output_path, county, sales_type))
+    elif arg(1) == "get_next_sale_cli":
+        # CLI wrapper for UiPath: outputs JSON that can be parsed
+        # Usage: python auction_utils.py get_next_sale_cli [counties]
+        # Example: python auction_utils.py get_next_sale_cli "Miami-Dade;Broward"
+        import json
+        counties_arg = arg(2)
+        counties = None
+        if counties_arg:
+            counties = [c.strip() for c in counties_arg.split(";") if c.strip()]
+        county, sale_type, url = get_next_sale(min_hours=0, counties=counties)
+        result = {
+            "county": county,
+            "sale_type": sale_type,
+            "url": url
+        }
+        print(json.dumps(result))
     elif arg(1) == "refreshSales":
         # Usage: python auction_utils.py refreshSales Miami-Dade;Broward;Palm Beach;Monroe
         counties_arg = " ".join(sys.argv[2:]) if len(sys.argv) > 2 else None
