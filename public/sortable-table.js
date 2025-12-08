@@ -135,10 +135,10 @@ function sortTable(table, col, type, dir) {
       if (!row.querySelector('.ffl-value-btn')) {
         const caseNum = row.cells[caseNumIdx + 1]?.textContent.trim();
         const valueBtn = document.createElement('button');
-        valueBtn.textContent = 'Value Estimate';
+        valueBtn.textContent = 'Val Est';
         valueBtn.className = 'ffl-value-btn';
         valueBtn.style.marginLeft = '6px';
-        valueBtn.style.fontSize = '0.95em';
+        valueBtn.style.fontSize = '0.75em';
         valueBtn.style.padding = '2px 8px';
         valueBtn.style.cursor = 'pointer';
         // Set tooltip to current estimate (if any)
@@ -339,4 +339,99 @@ function sortTable(table, col, type, dir) {
 
   document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('table').forEach(makeTableSortableAndFilterable);
+    
+    // Track currently selected row for Ctrl+C copying
+    let currentRow = null;
+    
+    // Highlight row on click and track as current
+    document.addEventListener('click', function(e) {
+      const row = e.target.closest('tbody tr:not(.ffl-notes-row)');
+      if (row) {
+        // Remove previous highlight
+        document.querySelectorAll('tbody tr.ffl-current-row').forEach(r => {
+          r.classList.remove('ffl-current-row');
+        });
+        // Highlight current row
+        row.classList.add('ffl-current-row');
+        currentRow = row;
+      }
+    });
+    
+    // Add CSS for row highlighting
+    const style = document.createElement('style');
+    style.textContent = `
+      tbody tr.ffl-current-row {
+        background-color: #e3f2fd !important;
+        outline: 2px solid #2196F3;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Handle Ctrl+C to copy row data in vertical format
+    document.addEventListener('keydown', function(e) {
+      // Check for Ctrl+C (or Cmd+C on Mac)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && currentRow && !e.target.matches('input, textarea')) {
+        // Get table headers
+        const table = currentRow.closest('table');
+        const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+        
+        // Build vertical summary
+        let summary = '';
+        let maxLabelLength = 0;
+        
+        // First pass: find the longest label for alignment
+        headers.forEach((header, idx) => {
+          if (header && idx > 0) { // Skip checkbox column (index 0)
+            maxLabelLength = Math.max(maxLabelLength, header.length);
+          }
+        });
+        
+        // Second pass: build the formatted text
+        headers.forEach((header, idx) => {
+          if (header && idx > 0) { // Skip checkbox column
+            const cell = currentRow.cells[idx];
+            let value = '';
+            
+            if (cell) {
+              // Get text content, but handle links specially
+              const link = cell.querySelector('a');
+              if (link) {
+                value = link.textContent.trim();
+                // Optionally include the URL
+                const url = link.href;
+                if (url) {
+                  value += ` (${url})`;
+                }
+              } else {
+                value = cell.textContent.trim();
+              }
+            }
+            
+            // Pad label to align values
+            const paddedLabel = header.padEnd(maxLabelLength + 2, ' ');
+            summary += `${paddedLabel}: ${value}\n`;
+          }
+        });
+        
+        // Copy to clipboard
+        if (summary) {
+          navigator.clipboard.writeText(summary).then(() => {
+            // Visual feedback
+            const originalBg = currentRow.style.backgroundColor;
+            currentRow.style.backgroundColor = '#4CAF50';
+            setTimeout(() => {
+              currentRow.style.backgroundColor = originalBg;
+            }, 200);
+            
+            console.log('Row data copied to clipboard!');
+          }).catch(err => {
+            console.error('Failed to copy to clipboard:', err);
+            alert('Failed to copy to clipboard. Please try again.');
+          });
+          
+          // Prevent default copy behavior
+          e.preventDefault();
+        }
+      }
+    });
   });
