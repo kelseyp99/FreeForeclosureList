@@ -324,19 +324,17 @@ def generate_html_report_from_sales(sales, county, sales_type):
     # Field names match Firestore exactly (with spaces)
     FIELD_ORDER = [
         ("Add Date", "Add Date"),
-        ("Address", "Address"),
-        ("Assessed Value", "Assessed Value"),
-        ("Case Number", "Case Number"),
-        ("Certificate Holder Name", "Certificate Holder Name"),
-        ("City", "City"),
-        ("Final Judgment", "Final Judgment"),
-        ("My Bid", "My Bid"),
-        ("Opening Bid", "Opening Bid"),
-        ("Parcel ID", "Parcel ID"),
-        ("Plaintiff Max Bid", "Plaintiff Max Bid"),
         ("Sale Date", "Sale Date"),
-        ("Status", "Status"),
+        ("Address", "Address"),
+        ("City", "City"),
         ("Zip", "Zip"),
+        ("Case Number", "Case Number"),
+        ("Parcel ID", "Parcel ID"),
+        ("Certificate Holder Name", "Certificate Holder Name"),
+        ("Status", "Status"),
+        ("Assessed Value", "Assessed Value"),
+        ("Final Judgment", "Final Judgment"),
+        ("Plaintiff Max Bid", "Plaintiff Max Bid"),
     ]
     html = f'''<!DOCTYPE html>
 <html lang="en">
