@@ -37,7 +37,7 @@
 </head>
 <body>
     <div class="report-scroll-container">
-        <div class="sticky-title"><strong>TrueForeclosure &mdash; Orange County Foreclosure Report</strong><br><span style="font-weight: normal; font-size: 0.95em;">Generated: 2025-12-07 20:00:21</span><span style="display: inline-block; margin-left: 60px;"><input type="checkbox" id="show-selected-static" title="Show Selected Only" style="transform: scale(1.2); margin-left: 16px; margin-right: 6px; vertical-align: middle; cursor: pointer;" /><label for="show-selected-static" style="font-size: 15px; color: #7a5c1c; font-weight: 500; user-select: none;">Show Selected Only</label></span></div>
+        <div class="sticky-title"><strong>TrueForeclosure &mdash; Orange County Foreclosure Report</strong><br><span style="font-weight: normal; font-size: 0.95em;">Generated: 2025-12-07 20:06:52</span><span style="display: inline-block; margin-left: 60px;"><input type="checkbox" id="show-selected-static" title="Show Selected Only" style="transform: scale(1.2); margin-left: 16px; margin-right: 6px; vertical-align: middle; cursor: pointer;" /><label for="show-selected-static" style="font-size: 15px; color: #7a5c1c; font-weight: 500; user-select: none;">Show Selected Only</label></span></div>
         <table>
             <thead class="sticky-table-header">
                 <tr><th style="width:36px"><input type="checkbox" id="header-select-all" title="Select/Deselect All" style="transform: scale(1.3); cursor: pointer; vertical-align: middle;" /></th><th>Add Date</th><th>Address</th><th>Assessed Value</th><th>Case Number</th><th>Certificate Holder Name</th><th>City</th><th>Final Judgment</th><th>My Bid</th><th>Opening Bid</th><th>Parcel ID</th><th>Plaintiff Max Bid</th><th>Sale Date</th><th>Status</th><th>Zip</th></tr>
@@ -435,6 +435,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var rowCheckboxes = document.querySelectorAll('.row-select-checkbox');
     var tableRows = document.querySelectorAll('tbody tr');
     
+    console.log('Found ' + rowCheckboxes.length + ' checkboxes');
+    console.log('Found ' + tableRows.length + ' table rows');
+    
     // Find column indices
     var headers = document.querySelectorAll('thead th');
     var parcelIdIdx = -1;
@@ -448,114 +451,114 @@ document.addEventListener('DOMContentLoaded', function() {
     }});
     
     // Owner association words
-    var ownerAssocWords = {json.dumps((params.get('owner_assoc_words', '') or '').split(','))};
+    var ownerAssocWords = ["HOA", "Homeowners Association", "Home Owners Association", "Condominium Association", "Condo Association", "Property Owners Association", "POA", "Community Association", "Townhome Association", "Master Association", "Association of Owners", "Owners Association", "Unit Owners Association", "Neighborhood Association", "Village Association", "Subdivision Association", "Residential Association", "Management Association", "Home Association"];
     ownerAssocWords = ownerAssocWords.map(function(w) {{ return w.trim().toLowerCase(); }}).filter(Boolean);
     
     // Function to apply all filters
-    function filterRows() {{
+    function filterRows() {
         var showOnlySelected = showSelectedCheckbox && showSelectedCheckbox.checked;
         var hideTimeshare = localStorage.getItem('ffl_filter_timeshare') === '1';
         var hideBlank = localStorage.getItem('ffl_filter_blank') === '1';
         var ownerAssocFilter = localStorage.getItem('ffl_filter_owner_assoc') || 'include';
         var statusFilterRaw = localStorage.getItem('ffl_filter_status');
         var statusFilter = [];
-        try {{
+        try {
             var parsed = JSON.parse(statusFilterRaw || '[]');
-            if (Array.isArray(parsed)) {{
-                statusFilter = parsed.map(function(s) {{ return String(s).toLowerCase(); }});
-            }}
+            if (Array.isArray(parsed)) {
+                statusFilter = parsed.map(function(s) { return String(s).toLowerCase(); });
+            }
         }} catch (e) {{}}
         
-        tableRows.forEach(function(row) {
+        tableRows.forEach(function(row) {{
             // Skip notes rows - they'll be handled with their parent row
-            if (row.classList.contains('ffl-notes-row')) {
+            if (row.classList.contains('ffl-notes-row')) {{
                 return;
-            }
+            }}
             
             var checkbox = row.querySelector('.row-select-checkbox');
             var show = true;
             
             // Show Selected Only filter
-            if (showOnlySelected && (!checkbox || !checkbox.checked)) {
+            if (showOnlySelected && (!checkbox || !checkbox.checked)) {{
                 show = false;
-            }
+            }}
             
             // Timeshare filter
-            if (show && hideTimeshare && parcelIdIdx >= 0) {
+            if (show && hideTimeshare && parcelIdIdx >= 0) {{
                 var parcelCell = row.cells[parcelIdIdx];
-                if (parcelCell) {
+                if (parcelCell) {{
                     var parcelText = parcelCell.textContent.trim().toUpperCase();
-                    if (parcelText.includes('TIMESHARE')) {
+                    if (parcelText.includes('TIMESHARE')) {{
                         show = false;
-                    }
-                }
-            }
+                    }}
+                }}
+            }}
             
             // Blank Parcel ID filter
-            if (show && hideBlank && parcelIdIdx >= 0) {
+            if (show && hideBlank && parcelIdIdx >= 0) {{
                 var parcelCell = row.cells[parcelIdIdx];
-                if (parcelCell) {
+                if (parcelCell) {{
                     var parcelText = parcelCell.textContent.trim();
-                    if (parcelText === '' || parcelText === '-') {
+                    if (parcelText === '' || parcelText === '-') {{
+                        show = false;
+                    }}
+                }}
+            }}
+            
+            // Status filter
+            if (show && statusFilter.length > 0 && statusIdx >= 0) {
+                var statusCell = row.cells[statusIdx];
+                if (statusCell) {
+                    var statusText = statusCell.textContent.trim().toLowerCase();
+                    if (!statusFilter.includes(statusText)) {
                         show = false;
                     }
                 }
             }
             
-            // Status filter
-            if (show && statusFilter.length > 0 && statusIdx >= 0) {{
-                var statusCell = row.cells[statusIdx];
-                if (statusCell) {{
-                    var statusText = statusCell.textContent.trim().toLowerCase();
-                    if (!statusFilter.includes(statusText)) {{
-                        show = false;
-                    }}
-                }}
-            }}
-            
             // Owner Association filter
-            if (show && ownerAssocFilter !== 'include' && certHolderIdx >= 0) {{
+            if (show && ownerAssocFilter !== 'include' && certHolderIdx >= 0) {
                 var certCell = row.cells[certHolderIdx];
-                if (certCell) {{
+                if (certCell) {
                     var certText = certCell.textContent.trim().toLowerCase();
-                    var isOwnerAssoc = ownerAssocWords.some(function(word) {{ return certText.includes(word); }});
-                    if (ownerAssocFilter === 'only' && !isOwnerAssoc) {{
+                    var isOwnerAssoc = ownerAssocWords.some(function(word) { return certText.includes(word); });
+                    if (ownerAssocFilter === 'only' && !isOwnerAssoc) {
                         show = false;
-                    }} else if (ownerAssocFilter === 'exclude' && isOwnerAssoc) {{
+                    } else if (ownerAssocFilter === 'exclude' && isOwnerAssoc) {
                         show = false;
-                    }}
-                }}
-            }}
+                    }
+                }
+            }
             
             // Apply visibility to main row
             row.style.display = show ? '' : 'none';
             
             // Handle associated notes row and estimate box
             var nextRow = row.nextElementSibling;
-            if (nextRow && nextRow.classList.contains('ffl-notes-row')) {{
-                if (!show) {{
+            if (nextRow && nextRow.classList.contains('ffl-notes-row')) {
+                if (!show) {
                     // If main row is hidden, always hide notes row
                     nextRow.style.display = 'none';
-                }} else {{
+                } else {
                     // If main row is shown, restore notes row visibility
                     // Check if it was previously expanded (has 'expanded' class or similar)
                     var toggleBtn = row.querySelector('.toggle-notes-btn');
-                    if (toggleBtn && toggleBtn.textContent.includes('−')) {{
+                    if (toggleBtn && toggleBtn.textContent.includes('−')) {
                         // Notes are expanded, show the row
                         nextRow.style.display = '';
-                    }} else {{
+                    } else {
                         // Notes are collapsed, keep hidden
                         nextRow.style.display = 'none';
-                    }}
-                }}
+                    }
+                }
                 
                 // Handle estimate box within notes row
                 var estimateBox = nextRow.querySelector('.estimate-box');
-                if (estimateBox) {{
+                if (estimateBox) {
                     estimateBox.style.display = show ? '' : 'none';
-                }}
+                }
             }}
-        });
+        }});
     }
     
     // Listen to "Show Selected Only" checkbox
@@ -565,26 +568,26 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Listen to individual row checkboxes to update filter when selection changes
     // Only trigger filter if "Show Selected Only" is enabled
-    rowCheckboxes.forEach(function(cb) {{
-        cb.addEventListener('change', function() {{
-            if (showSelectedCheckbox && showSelectedCheckbox.checked) {{
+    rowCheckboxes.forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            if (showSelectedCheckbox && showSelectedCheckbox.checked) {
                 filterRows();
-            }}
-        }});
-    }});
+            }
+        });
+    });
     
     // Toggle all row checkboxes when header checkbox is clicked
-    if (headerCheckbox) {{
-        headerCheckbox.addEventListener('change', function() {{
-            rowCheckboxes.forEach(function(cb) {{
+    if (headerCheckbox) {
+        headerCheckbox.addEventListener('change', function() {
+            rowCheckboxes.forEach(function(cb) {
                 cb.checked = headerCheckbox.checked;
-            }});
+            });
             // Only update filter if "Show Selected Only" is actually turned on
-            if (showSelectedCheckbox && showSelectedCheckbox.checked) {{
+            if (showSelectedCheckbox && showSelectedCheckbox.checked) {
                 filterRows();
-            }}
-        }});
-    }}
+            }
+        });
+    }
     
     // Listen to localStorage changes (from sidebar filters)
     // Note: storage event only fires in OTHER windows, so we need to poll
@@ -593,19 +596,19 @@ document.addEventListener('DOMContentLoaded', function() {
     var lastStatus = localStorage.getItem('ffl_filter_status');
     var lastOwnerAssoc = localStorage.getItem('ffl_filter_owner_assoc');
     
-    setInterval(function() {{
+    setInterval(function() {
         var currentTimeshare = localStorage.getItem('ffl_filter_timeshare');
         var currentBlank = localStorage.getItem('ffl_filter_blank');
         var currentStatus = localStorage.getItem('ffl_filter_status');
         var currentOwnerAssoc = localStorage.getItem('ffl_filter_owner_assoc');
         
-        if (currentTimeshare !== lastTimeshare || currentBlank !== lastBlank || currentStatus !== lastStatus || currentOwnerAssoc !== lastOwnerAssoc) {{
+        if (currentTimeshare !== lastTimeshare || currentBlank !== lastBlank || currentStatus !== lastStatus || currentOwnerAssoc !== lastOwnerAssoc) {
             lastTimeshare = currentTimeshare;
             lastBlank = currentBlank;
             lastStatus = currentStatus;
             lastOwnerAssoc = currentOwnerAssoc;
             filterRows();
-        }}
+        }
     }}, 200); // Check every 200ms
     
     // Also refilter when window gets focus (user might have changed settings)

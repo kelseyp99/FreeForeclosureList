@@ -430,10 +430,14 @@ def generate_html_report_from_sales(sales, county, sales_type):
     
     # Close the table and add scripts AFTER the loop
     html += '        </tbody>\n      </table>\n    </div>'
-    html += '''\n<script src="/sortable-table.js"></script>
+    
+    # Prepare owner association words as JSON
+    owner_assoc_json = json.dumps((params.get('owner_assoc_words', '') or '').split(','))
+    
+    html += f'''\n<script src="/sortable-table.js"></script>
 <script>
 // Show Selected Only functionality + localStorage filters
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {{
     var showSelectedCheckbox = document.getElementById('show-selected-static');
     var headerCheckbox = document.getElementById('header-select-all');
     var rowCheckboxes = document.querySelectorAll('.row-select-checkbox');
@@ -447,16 +451,16 @@ document.addEventListener('DOMContentLoaded', function() {
     var parcelIdIdx = -1;
     var statusIdx = -1;
     var certHolderIdx = -1;
-    headers.forEach(function(th, idx) {{
+    headers.forEach(function(th, idx) {{{{
         var text = th.textContent.trim().toLowerCase();
         if (text === 'parcel id') parcelIdIdx = idx;
         if (text === 'status') statusIdx = idx;
         if (text === 'certificate holder name') certHolderIdx = idx;
-    }});
+    }}}});
     
     // Owner association words
-    var ownerAssocWords = {json.dumps((params.get('owner_assoc_words', '') or '').split(','))};
-    ownerAssocWords = ownerAssocWords.map(function(w) {{ return w.trim().toLowerCase(); }}).filter(Boolean);
+    var ownerAssocWords = {owner_assoc_json};
+    ownerAssocWords = ownerAssocWords.map(function(w) {{{{ return w.trim().toLowerCase(); }}}}).filter(Boolean);
     
     // Function to apply all filters
     function filterRows() {{
@@ -471,43 +475,43 @@ document.addEventListener('DOMContentLoaded', function() {
             if (Array.isArray(parsed)) {{
                 statusFilter = parsed.map(function(s) {{ return String(s).toLowerCase(); }});
             }}
-        }} catch (e) {{}}
+        }}}} catch (e) {{{{}}}}
         
-        tableRows.forEach(function(row) {
+        tableRows.forEach(function(row) {{{{
             // Skip notes rows - they'll be handled with their parent row
-            if (row.classList.contains('ffl-notes-row')) {
+            if (row.classList.contains('ffl-notes-row')) {{{{
                 return;
-            }
+            }}}}
             
             var checkbox = row.querySelector('.row-select-checkbox');
             var show = true;
             
             // Show Selected Only filter
-            if (showOnlySelected && (!checkbox || !checkbox.checked)) {
+            if (showOnlySelected && (!checkbox || !checkbox.checked)) {{{{
                 show = false;
-            }
+            }}}}
             
             // Timeshare filter
-            if (show && hideTimeshare && parcelIdIdx >= 0) {
+            if (show && hideTimeshare && parcelIdIdx >= 0) {{{{
                 var parcelCell = row.cells[parcelIdIdx];
-                if (parcelCell) {
+                if (parcelCell) {{{{
                     var parcelText = parcelCell.textContent.trim().toUpperCase();
-                    if (parcelText.includes('TIMESHARE')) {
+                    if (parcelText.includes('TIMESHARE')) {{{{
                         show = false;
-                    }
-                }
-            }
+                    }}}}
+                }}}}
+            }}}}
             
             // Blank Parcel ID filter
-            if (show && hideBlank && parcelIdIdx >= 0) {
+            if (show && hideBlank && parcelIdIdx >= 0) {{{{
                 var parcelCell = row.cells[parcelIdIdx];
-                if (parcelCell) {
+                if (parcelCell) {{{{
                     var parcelText = parcelCell.textContent.trim();
-                    if (parcelText === '' || parcelText === '-') {
+                    if (parcelText === '' || parcelText === '-') {{{{
                         show = false;
-                    }
-                }
-            }
+                    }}}}
+                }}}}
+            }}}}
             
             // Status filter
             if (show && statusFilter.length > 0 && statusIdx >= 0) {{
@@ -561,14 +565,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (estimateBox) {{
                     estimateBox.style.display = show ? '' : 'none';
                 }}
-            }}
-        });
-    }
+            }}}}
+        }}}});
+    }}
     
     // Listen to "Show Selected Only" checkbox
-    if (showSelectedCheckbox) {{
+    if (showSelectedCheckbox) {{{{
         showSelectedCheckbox.addEventListener('change', filterRows);
-    }}
+    }}}}
     
     // Listen to individual row checkboxes to update filter when selection changes
     // Only trigger filter if "Show Selected Only" is enabled
@@ -613,14 +617,14 @@ document.addEventListener('DOMContentLoaded', function() {
             lastOwnerAssoc = currentOwnerAssoc;
             filterRows();
         }}
-    }}, 200); // Check every 200ms
+    }}}}, 200); // Check every 200ms
     
     // Also refilter when window gets focus (user might have changed settings)
     window.addEventListener('focus', filterRows);
     
     // Initial filter application
     filterRows();
-});
+}});
 </script>'''
     html += '\n</body>\n</html>'
     with open(output_path, 'w', encoding='utf-8') as f:
