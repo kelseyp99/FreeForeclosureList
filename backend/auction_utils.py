@@ -514,51 +514,51 @@ document.addEventListener('DOMContentLoaded', function() {{
             }}}}
             
             // Status filter
-            if (show && statusFilter.length > 0 && statusIdx >= 0) {{
+            if (show && statusFilter.length > 0 && statusIdx >= 0) {{{{
                 var statusCell = row.cells[statusIdx];
-                if (statusCell) {{
+                if (statusCell) {{{{
                     var statusText = statusCell.textContent.trim().toLowerCase();
-                    if (!statusFilter.includes(statusText)) {{
+                    if (!statusFilter.includes(statusText)) {{{{
                         show = false;
-                    }}
-                }}
-            }}
+                    }}}}
+                }}}}
+            }}}}
             
             // Owner Association filter
-            if (show && ownerAssocFilter !== 'include' && certHolderIdx >= 0) {{
+            if (show && ownerAssocFilter !== 'include' && certHolderIdx >= 0) {{{{
                 var certCell = row.cells[certHolderIdx];
-                if (certCell) {{
+                if (certCell) {{{{
                     var certText = certCell.textContent.trim().toLowerCase();
-                    var isOwnerAssoc = ownerAssocWords.some(function(word) {{ return certText.includes(word); }});
-                    if (ownerAssocFilter === 'only' && !isOwnerAssoc) {{
+                    var isOwnerAssoc = ownerAssocWords.some(function(word) {{{{ return certText.includes(word); }}}});
+                    if (ownerAssocFilter === 'only' && !isOwnerAssoc) {{{{
                         show = false;
-                    }} else if (ownerAssocFilter === 'exclude' && isOwnerAssoc) {{
+                    }}}} else if (ownerAssocFilter === 'exclude' && isOwnerAssoc) {{{{
                         show = false;
-                    }}
-                }}
-            }}
+                    }}}}
+                }}}}
+            }}}}
             
             // Apply visibility to main row
             row.style.display = show ? '' : 'none';
             
             // Handle associated notes row and estimate box
             var nextRow = row.nextElementSibling;
-            if (nextRow && nextRow.classList.contains('ffl-notes-row')) {{
-                if (!show) {{
+            if (nextRow && nextRow.classList.contains('ffl-notes-row')) {{{{
+                if (!show) {{{{
                     // If main row is hidden, always hide notes row
                     nextRow.style.display = 'none';
-                }} else {{
+                }}}} else {{{{
                     // If main row is shown, restore notes row visibility
                     // Check if it was previously expanded (has 'expanded' class or similar)
                     var toggleBtn = row.querySelector('.toggle-notes-btn');
-                    if (toggleBtn && toggleBtn.textContent.includes('−')) {{
+                    if (toggleBtn && toggleBtn.textContent.includes('−')) {{{{
                         // Notes are expanded, show the row
                         nextRow.style.display = '';
-                    }} else {{
+                    }}}} else {{{{
                         // Notes are collapsed, keep hidden
                         nextRow.style.display = 'none';
-                    }}
-                }}
+                    }}}}
+                }}}}
                 
                 // Handle estimate box within notes row
                 var estimateBox = nextRow.querySelector('.estimate-box');

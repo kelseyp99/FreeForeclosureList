@@ -37,7 +37,7 @@
 </head>
 <body>
     <div class="report-scroll-container">
-        <div class="sticky-title"><strong>TrueForeclosure &mdash; Orange County Foreclosure Report</strong><br><span style="font-weight: normal; font-size: 0.95em;">Generated: 2025-12-07 20:12:00</span><span style="display: inline-block; margin-left: 60px;"><input type="checkbox" id="show-selected-static" title="Show Selected Only" style="transform: scale(1.2); margin-left: 16px; margin-right: 6px; vertical-align: middle; cursor: pointer;" /><label for="show-selected-static" style="font-size: 15px; color: #7a5c1c; font-weight: 500; user-select: none;">Show Selected Only</label></span></div>
+        <div class="sticky-title"><strong>TrueForeclosure &mdash; Orange County Foreclosure Report</strong><br><span style="font-weight: normal; font-size: 0.95em;">Generated: 2025-12-07 20:14:00</span><span style="display: inline-block; margin-left: 60px;"><input type="checkbox" id="show-selected-static" title="Show Selected Only" style="transform: scale(1.2); margin-left: 16px; margin-right: 6px; vertical-align: middle; cursor: pointer;" /><label for="show-selected-static" style="font-size: 15px; color: #7a5c1c; font-weight: 500; user-select: none;">Show Selected Only</label></span></div>
         <table>
             <thead class="sticky-table-header">
                 <tr><th style="width:36px"><input type="checkbox" id="header-select-all" title="Select/Deselect All" style="transform: scale(1.3); cursor: pointer; vertical-align: middle;" /></th><th>Add Date</th><th>Address</th><th>Assessed Value</th><th>Case Number</th><th>Certificate Holder Name</th><th>City</th><th>Final Judgment</th><th>My Bid</th><th>Opening Bid</th><th>Parcel ID</th><th>Plaintiff Max Bid</th><th>Sale Date</th><th>Status</th><th>Zip</th></tr>
@@ -506,51 +506,51 @@ document.addEventListener('DOMContentLoaded', function() {
             }}
             
             // Status filter
-            if (show && statusFilter.length > 0 && statusIdx >= 0) {
+            if (show && statusFilter.length > 0 && statusIdx >= 0) {{
                 var statusCell = row.cells[statusIdx];
-                if (statusCell) {
+                if (statusCell) {{
                     var statusText = statusCell.textContent.trim().toLowerCase();
-                    if (!statusFilter.includes(statusText)) {
+                    if (!statusFilter.includes(statusText)) {{
                         show = false;
-                    }
-                }
-            }
+                    }}
+                }}
+            }}
             
             // Owner Association filter
-            if (show && ownerAssocFilter !== 'include' && certHolderIdx >= 0) {
+            if (show && ownerAssocFilter !== 'include' && certHolderIdx >= 0) {{
                 var certCell = row.cells[certHolderIdx];
-                if (certCell) {
+                if (certCell) {{
                     var certText = certCell.textContent.trim().toLowerCase();
-                    var isOwnerAssoc = ownerAssocWords.some(function(word) { return certText.includes(word); });
-                    if (ownerAssocFilter === 'only' && !isOwnerAssoc) {
+                    var isOwnerAssoc = ownerAssocWords.some(function(word) {{ return certText.includes(word); }});
+                    if (ownerAssocFilter === 'only' && !isOwnerAssoc) {{
                         show = false;
-                    } else if (ownerAssocFilter === 'exclude' && isOwnerAssoc) {
+                    }} else if (ownerAssocFilter === 'exclude' && isOwnerAssoc) {{
                         show = false;
-                    }
-                }
-            }
+                    }}
+                }}
+            }}
             
             // Apply visibility to main row
             row.style.display = show ? '' : 'none';
             
             // Handle associated notes row and estimate box
             var nextRow = row.nextElementSibling;
-            if (nextRow && nextRow.classList.contains('ffl-notes-row')) {
-                if (!show) {
+            if (nextRow && nextRow.classList.contains('ffl-notes-row')) {{
+                if (!show) {{
                     // If main row is hidden, always hide notes row
                     nextRow.style.display = 'none';
-                } else {
+                }} else {{
                     // If main row is shown, restore notes row visibility
                     // Check if it was previously expanded (has 'expanded' class or similar)
                     var toggleBtn = row.querySelector('.toggle-notes-btn');
-                    if (toggleBtn && toggleBtn.textContent.includes('−')) {
+                    if (toggleBtn && toggleBtn.textContent.includes('−')) {{
                         // Notes are expanded, show the row
                         nextRow.style.display = '';
-                    } else {
+                    }} else {{
                         // Notes are collapsed, keep hidden
                         nextRow.style.display = 'none';
-                    }
-                }
+                    }}
+                }}
                 
                 // Handle estimate box within notes row
                 var estimateBox = nextRow.querySelector('.estimate-box');
