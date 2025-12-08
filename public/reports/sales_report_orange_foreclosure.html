@@ -37,7 +37,7 @@
 </head>
 <body>
     <div class="report-scroll-container">
-        <div class="sticky-title"><strong>TrueForeclosure &mdash; Orange County Foreclosure Report</strong><br><span style="font-weight: normal; font-size: 0.95em;">Generated: 2025-12-07 20:06:52</span><span style="display: inline-block; margin-left: 60px;"><input type="checkbox" id="show-selected-static" title="Show Selected Only" style="transform: scale(1.2); margin-left: 16px; margin-right: 6px; vertical-align: middle; cursor: pointer;" /><label for="show-selected-static" style="font-size: 15px; color: #7a5c1c; font-weight: 500; user-select: none;">Show Selected Only</label></span></div>
+        <div class="sticky-title"><strong>TrueForeclosure &mdash; Orange County Foreclosure Report</strong><br><span style="font-weight: normal; font-size: 0.95em;">Generated: 2025-12-07 20:08:22</span><span style="display: inline-block; margin-left: 60px;"><input type="checkbox" id="show-selected-static" title="Show Selected Only" style="transform: scale(1.2); margin-left: 16px; margin-right: 6px; vertical-align: middle; cursor: pointer;" /><label for="show-selected-static" style="font-size: 15px; color: #7a5c1c; font-weight: 500; user-select: none;">Show Selected Only</label></span></div>
         <table>
             <thead class="sticky-table-header">
                 <tr><th style="width:36px"><input type="checkbox" id="header-select-all" title="Select/Deselect All" style="transform: scale(1.3); cursor: pointer; vertical-align: middle;" /></th><th>Add Date</th><th>Address</th><th>Assessed Value</th><th>Case Number</th><th>Certificate Holder Name</th><th>City</th><th>Final Judgment</th><th>My Bid</th><th>Opening Bid</th><th>Parcel ID</th><th>Plaintiff Max Bid</th><th>Sale Date</th><th>Status</th><th>Zip</th></tr>
@@ -462,11 +462,11 @@ document.addEventListener('DOMContentLoaded', function() {
         var ownerAssocFilter = localStorage.getItem('ffl_filter_owner_assoc') || 'include';
         var statusFilterRaw = localStorage.getItem('ffl_filter_status');
         var statusFilter = [];
-        try {
+        try {{
             var parsed = JSON.parse(statusFilterRaw || '[]');
-            if (Array.isArray(parsed)) {
-                statusFilter = parsed.map(function(s) { return String(s).toLowerCase(); });
-            }
+            if (Array.isArray(parsed)) {{
+                statusFilter = parsed.map(function(s) {{ return String(s).toLowerCase(); }});
+            }}
         }} catch (e) {{}}
         
         tableRows.forEach(function(row) {{

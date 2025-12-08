@@ -470,11 +470,11 @@ document.addEventListener('DOMContentLoaded', function() {{
         var ownerAssocFilter = localStorage.getItem('ffl_filter_owner_assoc') || 'include';
         var statusFilterRaw = localStorage.getItem('ffl_filter_status');
         var statusFilter = [];
-        try {{
+        try {{{{
             var parsed = JSON.parse(statusFilterRaw || '[]');
-            if (Array.isArray(parsed)) {{
-                statusFilter = parsed.map(function(s) {{ return String(s).toLowerCase(); }});
-            }}
+            if (Array.isArray(parsed)) {{{{
+                statusFilter = parsed.map(function(s) {{{{ return String(s).toLowerCase(); }}}});
+            }}}}
         }}}} catch (e) {{{{}}}}
         
         tableRows.forEach(function(row) {{{{
