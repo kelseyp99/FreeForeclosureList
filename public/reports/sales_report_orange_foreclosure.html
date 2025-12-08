@@ -37,7 +37,7 @@
 </head>
 <body>
     <div class="report-scroll-container">
-        <div class="sticky-title"><strong>TrueForeclosure &mdash; Orange County Foreclosure Report</strong><br><span style="font-weight: normal; font-size: 0.95em;">Generated: 2025-12-07 19:58:39</span><span style="display: inline-block; margin-left: 60px;"><input type="checkbox" id="show-selected-static" title="Show Selected Only" style="transform: scale(1.2); margin-left: 16px; margin-right: 6px; vertical-align: middle; cursor: pointer;" /><label for="show-selected-static" style="font-size: 15px; color: #7a5c1c; font-weight: 500; user-select: none;">Show Selected Only</label></span></div>
+        <div class="sticky-title"><strong>TrueForeclosure &mdash; Orange County Foreclosure Report</strong><br><span style="font-weight: normal; font-size: 0.95em;">Generated: 2025-12-07 20:00:21</span><span style="display: inline-block; margin-left: 60px;"><input type="checkbox" id="show-selected-static" title="Show Selected Only" style="transform: scale(1.2); margin-left: 16px; margin-right: 6px; vertical-align: middle; cursor: pointer;" /><label for="show-selected-static" style="font-size: 15px; color: #7a5c1c; font-weight: 500; user-select: none;">Show Selected Only</label></span></div>
         <table>
             <thead class="sticky-table-header">
                 <tr><th style="width:36px"><input type="checkbox" id="header-select-all" title="Select/Deselect All" style="transform: scale(1.3); cursor: pointer; vertical-align: middle;" /></th><th>Add Date</th><th>Address</th><th>Assessed Value</th><th>Case Number</th><th>Certificate Holder Name</th><th>City</th><th>Final Judgment</th><th>My Bid</th><th>Opening Bid</th><th>Parcel ID</th><th>Plaintiff Max Bid</th><th>Sale Date</th><th>Status</th><th>Zip</th></tr>
@@ -559,14 +559,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Listen to "Show Selected Only" checkbox
-    if (showSelectedCheckbox) {
+    if (showSelectedCheckbox) {{
         showSelectedCheckbox.addEventListener('change', filterRows);
-    }
+    }}
     
     // Listen to individual row checkboxes to update filter when selection changes
-    rowCheckboxes.forEach(function(cb) {
-        cb.addEventListener('change', filterRows);
-    });
+    // Only trigger filter if "Show Selected Only" is enabled
+    rowCheckboxes.forEach(function(cb) {{
+        cb.addEventListener('change', function() {{
+            if (showSelectedCheckbox && showSelectedCheckbox.checked) {{
+                filterRows();
+            }}
+        }});
+    }});
     
     // Toggle all row checkboxes when header checkbox is clicked
     if (headerCheckbox) {{

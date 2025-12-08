@@ -563,14 +563,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Listen to "Show Selected Only" checkbox
-    if (showSelectedCheckbox) {
+    if (showSelectedCheckbox) {{
         showSelectedCheckbox.addEventListener('change', filterRows);
-    }
+    }}
     
     // Listen to individual row checkboxes to update filter when selection changes
-    rowCheckboxes.forEach(function(cb) {
-        cb.addEventListener('change', filterRows);
-    });
+    // Only trigger filter if "Show Selected Only" is enabled
+    rowCheckboxes.forEach(function(cb) {{
+        cb.addEventListener('change', function() {{
+            if (showSelectedCheckbox && showSelectedCheckbox.checked) {{
+                filterRows();
+            }}
+        }});
+    }});
     
     // Toggle all row checkboxes when header checkbox is clicked
     if (headerCheckbox) {{
