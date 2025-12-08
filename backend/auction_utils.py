@@ -379,7 +379,7 @@ def generate_html_report_from_sales(sales, county, sales_type):
         <table>
             <thead class="sticky-table-header">
                 <tr>'''
-    html += '<th style="width:36px"><input type="checkbox" id="header-show-selected" title="Show Selected Only" style="transform: scale(1.3); cursor: pointer; vertical-align: middle;" /></th>'  # Checkbox column
+    html += '<th style="width:36px"><input type="checkbox" id="header-select-all" title="Select/Deselect All" style="transform: scale(1.3); cursor: pointer; vertical-align: middle;" /></th>'  # Checkbox column
     for field, label in FIELD_ORDER:
         html += f'<th>{label}</th>'
     html += '</tr>\n        </thead>\n        <tbody>\n'
@@ -435,7 +435,7 @@ def generate_html_report_from_sales(sales, county, sales_type):
 // Show Selected Only functionality + localStorage filters
 document.addEventListener('DOMContentLoaded', function() {
     var showSelectedCheckbox = document.getElementById('show-selected-static');
-    var headerCheckbox = document.getElementById('header-show-selected');
+    var headerCheckbox = document.getElementById('header-select-all');
     var rowCheckboxes = document.querySelectorAll('.row-select-checkbox');
     var tableRows = document.querySelectorAll('tbody tr');
     
@@ -573,14 +573,17 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Toggle all row checkboxes when header checkbox is clicked
-    if (headerCheckbox) {
-        headerCheckbox.addEventListener('change', function() {
-            rowCheckboxes.forEach(function(cb) {
+    if (headerCheckbox) {{
+        headerCheckbox.addEventListener('change', function() {{
+            rowCheckboxes.forEach(function(cb) {{
                 cb.checked = headerCheckbox.checked;
-            });
-            filterRows(); // Update filter after toggling all
-        });
-    }
+            }});
+            // Only update filter if "Show Selected Only" is actually turned on
+            if (showSelectedCheckbox && showSelectedCheckbox.checked) {{
+                filterRows();
+            }}
+        }});
+    }}
     
     // Listen to localStorage changes (from sidebar filters)
     // Note: storage event only fires in OTHER windows, so we need to poll
