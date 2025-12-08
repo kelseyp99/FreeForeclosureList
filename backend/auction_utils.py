@@ -626,7 +626,7 @@ document.addEventListener('DOMContentLoaded', function() {{
             lastOwnerAssoc = currentOwnerAssoc;
             filterRows();
         }}
-    }}}}, 200); // Check every 200ms
+    }}, 200); // Check every 200ms
     
     // Also refilter when window gets focus (user might have changed settings)
     window.addEventListener('focus', filterRows);
