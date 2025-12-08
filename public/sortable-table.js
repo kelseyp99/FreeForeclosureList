@@ -314,6 +314,13 @@ function sortTable(table, col, type, dir) {
         const table = currentRow.closest('table');
         const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
         
+        // Get case number for notes and estimate
+        let caseNumIdx = -1;
+        headers.forEach((h, i) => {
+          if (h.toLowerCase() === 'case number') caseNumIdx = i;
+        });
+        const caseNum = caseNumIdx >= 0 ? currentRow.cells[caseNumIdx]?.textContent.trim() : '';
+        
         // Build HTML formatted vertical summary for Gmail
         let htmlContent = '<div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">';
         let plainTextContent = '';
@@ -349,6 +356,27 @@ function sortTable(table, col, type, dir) {
             plainTextContent += `${header}: ${plainValue}\n`;
           }
         });
+        
+        // Add Notes from localStorage
+        const notesValue = caseNum ? (localStorage.getItem('ffl_note_' + caseNum) || '') : '';
+        if (notesValue) {
+          htmlContent += `<div style="margin-bottom: 8px;">`;
+          htmlContent += `<strong style="color: #333; min-width: 200px; display: inline-block;">Notes:</strong> `;
+          htmlContent += `<span style="color: #555;">${notesValue.replace(/\n/g, '<br>')}</span>`;
+          htmlContent += `</div>`;
+          plainTextContent += `Notes: ${notesValue}\n`;
+        }
+        
+        // Add Value Estimate from localStorage
+        const estimateValue = caseNum ? (localStorage.getItem('ffl_est_' + caseNum) || '') : '';
+        if (estimateValue) {
+          const formattedEstimate = '$' + Number(estimateValue).toLocaleString();
+          htmlContent += `<div style="margin-bottom: 8px;">`;
+          htmlContent += `<strong style="color: #333; min-width: 200px; display: inline-block;">Value Estimate:</strong> `;
+          htmlContent += `<span style="color: #555;">${formattedEstimate}</span>`;
+          htmlContent += `</div>`;
+          plainTextContent += `Value Estimate: ${formattedEstimate}\n`;
+        }
         
         htmlContent += '</div>';
         
