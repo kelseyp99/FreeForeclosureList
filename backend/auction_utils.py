@@ -284,7 +284,9 @@ def generate_html_report_from_sales(sales, county, sales_type):
     from datetime import datetime
     import json
     
-    output_path = f"dist/reports/sales_report_{county.lower()}_{sales_type.lower().replace(" ", "")}.html"
+    # Use absolute path relative to project root
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    output_path = os.path.join(project_root, "dist", "reports", f"sales_report_{county.lower()}_{sales_type.lower().replace(' ', '')}.html")
     # Safety check: ensure sortable-table.js exists
     js_path = os.path.join(os.path.dirname(__file__), '..', 'public', 'sortable-table.js')
     if not os.path.isfile(js_path):
@@ -462,22 +464,28 @@ document.addEventListener('DOMContentLoaded', function() {{
     
     // Notes toggle functionality
     var toggleButtons = document.querySelectorAll('.toggle-notes-btn');
+    console.log('[DEBUG] Found ' + toggleButtons.length + ' toggle buttons');
     toggleButtons.forEach(function(btn) {{
         btn.addEventListener('click', function(e) {{
             e.preventDefault();
+            console.log('[DEBUG] Toggle button clicked, row=' + this.getAttribute('data-row'));
             var rowId = this.getAttribute('data-row');
             var notesRow = document.getElementById('notes-row-' + rowId);
+            console.log('[DEBUG] Notes row found:', notesRow !== null);
             if (notesRow) {{
                 if (notesRow.style.display === 'none') {{
                     notesRow.style.display = '';
                     this.textContent = '−';
+                    console.log('[DEBUG] Expanded notes row ' + rowId);
                 }} else {{
                     notesRow.style.display = 'none';
                     this.textContent = '+';
+                    console.log('[DEBUG] Collapsed notes row ' + rowId);
                 }}
             }}
         }});
     }});
+    console.log('[DEBUG] Notes toggle event listeners attached');
     
     // Find column indices
     var headers = document.querySelectorAll('thead th');
