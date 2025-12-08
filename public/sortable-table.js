@@ -367,7 +367,7 @@ function sortTable(table, col, type, dir) {
     `;
     document.head.appendChild(style);
     
-    // Handle Ctrl+C to copy row data in vertical format
+    // Handle Ctrl+C to copy row data in vertical format with HTML formatting
     document.addEventListener('keydown', function(e) {
       // Check for Ctrl+C (or Cmd+C on Mac)
       if ((e.ctrlKey || e.metaKey) && e.key === 'c' && currentRow && !e.target.matches('input, textarea')) {
@@ -375,63 +375,77 @@ function sortTable(table, col, type, dir) {
         const table = currentRow.closest('table');
         const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
         
-        // Build vertical summary
-        let summary = '';
-        let maxLabelLength = 0;
+        // Build HTML formatted vertical summary for Gmail
+        let htmlContent = '<div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">';
+        let plainTextContent = '';
         
-        // First pass: find the longest label for alignment
         headers.forEach((header, idx) => {
-          if (header && idx > 0) { // Skip checkbox column (index 0)
-            maxLabelLength = Math.max(maxLabelLength, header.length);
-          }
-        });
-        
-        // Second pass: build the formatted text
-        headers.forEach((header, idx) => {
-          if (header && idx > 0) { // Skip checkbox column
+          if (header && idx > 0 && header.toLowerCase() !== 'notes') { // Skip checkbox and notes columns
             const cell = currentRow.cells[idx];
-            let value = '';
+            let htmlValue = '';
+            let plainValue = '';
             
             if (cell) {
               // Get text content, but handle links specially
               const link = cell.querySelector('a');
               if (link) {
-                value = link.textContent.trim();
-                // Optionally include the URL
+                const text = link.textContent.trim();
                 const url = link.href;
-                if (url) {
-                  value += ` (${url})`;
-                }
+                htmlValue = `<a href="${url}" style="color: #1a73e8; text-decoration: none;">${text}</a>`;
+                plainValue = `${text} (${url})`;
               } else {
-                value = cell.textContent.trim();
+                const text = cell.textContent.trim();
+                htmlValue = text;
+                plainValue = text;
               }
             }
             
-            // Pad label to align values
-            const paddedLabel = header.padEnd(maxLabelLength + 2, ' ');
-            summary += `${paddedLabel}: ${value}\n`;
+            // Add to HTML content with bold labels
+            htmlContent += `<div style="margin-bottom: 8px;">`;
+            htmlContent += `<strong style="color: #333; min-width: 200px; display: inline-block;">${header}:</strong> `;
+            htmlContent += `<span style="color: #555;">${htmlValue}</span>`;
+            htmlContent += `</div>`;
+            
+            // Plain text fallback
+            plainTextContent += `${header}: ${plainValue}\n`;
           }
         });
         
-        // Copy to clipboard
-        if (summary) {
-          navigator.clipboard.writeText(summary).then(() => {
-            // Visual feedback
+        htmlContent += '</div>';
+        
+        // Copy both HTML and plain text to clipboard
+        const clipboardItem = new ClipboardItem({
+          'text/html': new Blob([htmlContent], { type: 'text/html' }),
+          'text/plain': new Blob([plainTextContent], { type: 'text/plain' })
+        });
+        
+        navigator.clipboard.write([clipboardItem]).then(() => {
+          // Visual feedback
+          const originalBg = currentRow.style.backgroundColor;
+          currentRow.style.backgroundColor = '#4CAF50';
+          setTimeout(() => {
+            currentRow.style.backgroundColor = originalBg;
+          }, 200);
+          
+          console.log('Row data copied to clipboard with HTML formatting!');
+        }).catch(err => {
+          // Fallback to plain text if HTML clipboard fails
+          console.warn('HTML clipboard failed, falling back to plain text:', err);
+          navigator.clipboard.writeText(plainTextContent).then(() => {
             const originalBg = currentRow.style.backgroundColor;
             currentRow.style.backgroundColor = '#4CAF50';
             setTimeout(() => {
               currentRow.style.backgroundColor = originalBg;
             }, 200);
-            
-            console.log('Row data copied to clipboard!');
-          }).catch(err => {
-            console.error('Failed to copy to clipboard:', err);
+            console.log('Row data copied to clipboard (plain text)!');
+          }).catch(err2 => {
+            console.error('Failed to copy to clipboard:', err2);
             alert('Failed to copy to clipboard. Please try again.');
           });
-          
-          // Prevent default copy behavior
-          e.preventDefault();
-        }
+        });
+        
+        // Prevent default copy behavior
+        e.preventDefault();
       }
     });
   });
