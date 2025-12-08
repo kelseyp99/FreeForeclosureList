@@ -282,6 +282,8 @@ def generate_html_report_from_firestore(county, sales_type):
 def generate_html_report_from_sales(sales, county, sales_type):
     import os
     from datetime import datetime
+    import json
+    
     output_path = f"dist/reports/sales_report_{county.lower()}_{sales_type.lower().replace(" ", "")}.html"
     # Safety check: ensure sortable-table.js exists
     js_path = os.path.join(os.path.dirname(__file__), '..', 'public', 'sortable-table.js')
@@ -289,8 +291,22 @@ def generate_html_report_from_sales(sales, county, sales_type):
         print(f"ERROR: Required JS file not found: {js_path}\nReport generation aborted to prevent loss of interactivity.")
         return
 
+    # Load params for owner association words
+    params = {}
+    params_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'config', 'params.js')
+    try:
+        with open(params_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            # Extract JSON from "export default {...}"
+            import re
+            match = re.search(r'export\s+default\s+(\{.*\})', content, re.DOTALL)
+            if match:
+                params = json.loads(match.group(1))
+    except Exception as e:
+        print(f"Warning: Could not load params: {e}")
+        params = {}
+
     # Load PA template for the county
-    import json
     pa_template = None
     pa_template_path = os.path.join(os.path.dirname(__file__), 'Legacy', 'foreclosureSales_clean.json')
     try:
