@@ -37,7 +37,7 @@
 </head>
 <body>
     <div class="report-scroll-container">
-        <div class="sticky-title"><strong>TrueForeclosure &mdash; Orange County Foreclosure Report</strong><br><span style="font-weight: normal; font-size: 0.95em;">Generated: 2025-12-07 20:46:32</span><span style="display: inline-block; margin-left: 60px;"><input type="checkbox" id="show-selected-static" title="Show Selected Only" style="transform: scale(1.2); margin-left: 16px; margin-right: 6px; vertical-align: middle; cursor: pointer;" /><label for="show-selected-static" style="font-size: 15px; color: #7a5c1c; font-weight: 500; user-select: none;">Show Selected Only</label></span></div>
+        <div class="sticky-title"><strong>TrueForeclosure &mdash; Orange County Foreclosure Report</strong><br><span style="font-weight: normal; font-size: 0.95em;">Generated: 2025-12-07 20:48:57</span><span style="display: inline-block; margin-left: 60px;"><input type="checkbox" id="show-selected-static" title="Show Selected Only" style="transform: scale(1.2); margin-left: 16px; margin-right: 6px; vertical-align: middle; cursor: pointer;" /><label for="show-selected-static" style="font-size: 15px; color: #7a5c1c; font-weight: 500; user-select: none;">Show Selected Only</label></span></div>
         <table>
             <thead class="sticky-table-header">
                 <tr><th style="width:36px"><input type="checkbox" id="header-select-all" title="Select/Deselect All" style="transform: scale(1.3); cursor: pointer; vertical-align: middle;" /></th><th style="width:50px">Notes</th><th>Add Date</th><th>Address</th><th>Assessed Value</th><th>Case Number</th><th>Certificate Holder Name</th><th>City</th><th>Final Judgment</th><th>My Bid</th><th>Opening Bid</th><th>Parcel ID</th><th>Plaintiff Max Bid</th><th>Sale Date</th><th>Status</th><th>Zip</th></tr>
@@ -818,39 +818,41 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Found ' + rowCheckboxes.length + ' checkboxes');
     console.log('Found ' + tableRows.length + ' table rows');
     
-    // Notes toggle functionality
-    var toggleButtons = document.querySelectorAll('.toggle-notes-btn');
-    console.log('[DEBUG] Found ' + toggleButtons.length + ' toggle buttons');
+    // Notes toggle functionality using event delegation
+    var tbody = document.querySelector('tbody');
+    console.log('[DEBUG] Setting up event delegation on tbody');
     
-    // Test if first button exists and is clickable
-    if (toggleButtons.length > 0) {
-        console.log('[DEBUG] First button element:', toggleButtons[0]);
-        console.log('[DEBUG] First button parent:', toggleButtons[0].parentElement);
-        console.log('[DEBUG] First button computed display:', window.getComputedStyle(toggleButtons[0]).display);
-    }
-    
-    toggleButtons.forEach(function(btn, index) {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('[DEBUG] Toggle button clicked, row=' + this.getAttribute('data-row'));
-            var rowId = this.getAttribute('data-row');
-            var notesRow = document.getElementById('notes-row-' + rowId);
-            console.log('[DEBUG] Notes row found:', notesRow !== null);
-            if (notesRow) {
-                if (notesRow.style.display === 'none' || notesRow.style.display === '') {
-                    notesRow.style.display = 'table-row';
-                    this.textContent = '−';
-                    console.log('[DEBUG] Expanded notes row ' + rowId);
-                } else {
-                    notesRow.style.display = 'none';
-                    this.textContent = '+';
-                    console.log('[DEBUG] Collapsed notes row ' + rowId);
+    if (tbody) {
+        tbody.addEventListener('click', function(e) {
+            console.log('[DEBUG] Click detected in tbody, target:', e.target.tagName, e.target.className);
+            
+            // Check if the clicked element is a toggle button
+            if (e.target.classList.contains('toggle-notes-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[DEBUG] Toggle button clicked, row=' + e.target.getAttribute('data-row'));
+                
+                var rowId = e.target.getAttribute('data-row');
+                var notesRow = document.getElementById('notes-row-' + rowId);
+                console.log('[DEBUG] Notes row found:', notesRow !== null);
+                
+                if (notesRow) {
+                    if (notesRow.style.display === 'none' || notesRow.style.display === '') {
+                        notesRow.style.display = 'table-row';
+                        e.target.textContent = '−';
+                        console.log('[DEBUG] Expanded notes row ' + rowId);
+                    } else {
+                        notesRow.style.display = 'none';
+                        e.target.textContent = '+';
+                        console.log('[DEBUG] Collapsed notes row ' + rowId);
+                    }
                 }
             }
-        }, true);  // Use capture phase
-    });
-    console.log('[DEBUG] Notes toggle event listeners attached');
+        });
+        console.log('[DEBUG] Event delegation attached to tbody');
+    } else {
+        console.log('[ERROR] tbody not found!');
+    }
     
     // Find column indices
     var headers = document.querySelectorAll('thead th');

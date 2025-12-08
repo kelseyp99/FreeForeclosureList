@@ -462,39 +462,41 @@ document.addEventListener('DOMContentLoaded', function() {{
     console.log('Found ' + rowCheckboxes.length + ' checkboxes');
     console.log('Found ' + tableRows.length + ' table rows');
     
-    // Notes toggle functionality
-    var toggleButtons = document.querySelectorAll('.toggle-notes-btn');
-    console.log('[DEBUG] Found ' + toggleButtons.length + ' toggle buttons');
+    // Notes toggle functionality using event delegation
+    var tbody = document.querySelector('tbody');
+    console.log('[DEBUG] Setting up event delegation on tbody');
     
-    // Test if first button exists and is clickable
-    if (toggleButtons.length > 0) {{
-        console.log('[DEBUG] First button element:', toggleButtons[0]);
-        console.log('[DEBUG] First button parent:', toggleButtons[0].parentElement);
-        console.log('[DEBUG] First button computed display:', window.getComputedStyle(toggleButtons[0]).display);
-    }}
-    
-    toggleButtons.forEach(function(btn, index) {{
-        btn.addEventListener('click', function(e) {{
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('[DEBUG] Toggle button clicked, row=' + this.getAttribute('data-row'));
-            var rowId = this.getAttribute('data-row');
-            var notesRow = document.getElementById('notes-row-' + rowId);
-            console.log('[DEBUG] Notes row found:', notesRow !== null);
-            if (notesRow) {{
-                if (notesRow.style.display === 'none' || notesRow.style.display === '') {{
-                    notesRow.style.display = 'table-row';
-                    this.textContent = '−';
-                    console.log('[DEBUG] Expanded notes row ' + rowId);
-                }} else {{
-                    notesRow.style.display = 'none';
-                    this.textContent = '+';
-                    console.log('[DEBUG] Collapsed notes row ' + rowId);
+    if (tbody) {{
+        tbody.addEventListener('click', function(e) {{
+            console.log('[DEBUG] Click detected in tbody, target:', e.target.tagName, e.target.className);
+            
+            // Check if the clicked element is a toggle button
+            if (e.target.classList.contains('toggle-notes-btn')) {{
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[DEBUG] Toggle button clicked, row=' + e.target.getAttribute('data-row'));
+                
+                var rowId = e.target.getAttribute('data-row');
+                var notesRow = document.getElementById('notes-row-' + rowId);
+                console.log('[DEBUG] Notes row found:', notesRow !== null);
+                
+                if (notesRow) {{
+                    if (notesRow.style.display === 'none' || notesRow.style.display === '') {{
+                        notesRow.style.display = 'table-row';
+                        e.target.textContent = '−';
+                        console.log('[DEBUG] Expanded notes row ' + rowId);
+                    }} else {{
+                        notesRow.style.display = 'none';
+                        e.target.textContent = '+';
+                        console.log('[DEBUG] Collapsed notes row ' + rowId);
+                    }}
                 }}
             }}
-        }}, true);  // Use capture phase
-    }});
-    console.log('[DEBUG] Notes toggle event listeners attached');
+        }});
+        console.log('[DEBUG] Event delegation attached to tbody');
+    }} else {{
+        console.log('[ERROR] tbody not found!');
+    }}
     
     // Find column indices
     var headers = document.querySelectorAll('thead th');
