@@ -562,9 +562,9 @@ document.addEventListener('DOMContentLoaded', function() {{
                 
                 // Handle estimate box within notes row
                 var estimateBox = nextRow.querySelector('.estimate-box');
-                if (estimateBox) {{
+                if (estimateBox) {{{{
                     estimateBox.style.display = show ? '' : 'none';
-                }}
+                }}}}
             }}}}
         }}}});
     }}
