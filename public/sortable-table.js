@@ -80,6 +80,127 @@ function sortTable(table, col, type, dir) {
       }
     });
 
+    // Add Value Estimate button handlers (buttons are in the notes row HTML)
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('ffl-value-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const caseNum = e.target.getAttribute('data-case');
+        const rowIdx = e.target.getAttribute('data-row');
+        const mainRow = document.getElementById('row-' + rowIdx);
+        
+        // Helper to get Final Judgment value from row
+        function getFinalJudgment(row) {
+          let fjIdx = -1;
+          Array.from(row.parentNode.parentNode.querySelectorAll('thead th')).forEach((th, idx) => {
+            if (th.textContent.trim().toLowerCase() === 'final judgment') fjIdx = idx;
+          });
+          if (fjIdx === -1) return null;
+          const val = row.cells[fjIdx]?.textContent.replace(/[^\d.\-]/g, '');
+          return val ? parseFloat(val) : null;
+        }
+        
+        // Remove any existing modal
+        const oldModal = document.getElementById('value-estimate-modal');
+        if (oldModal) oldModal.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'value-estimate-modal';
+        modal.style.position = 'fixed';
+        modal.style.top = '50%';
+        modal.style.left = '50%';
+        modal.style.transform = 'translate(-50%, -50%)';
+        modal.style.background = '#fff';
+        modal.style.border = '1px solid #ccc';
+        modal.style.boxShadow = '0 2px 12px rgba(0,0,0,0.2)';
+        modal.style.zIndex = 10000;
+        modal.style.padding = '20px';
+        modal.style.minWidth = '320px';
+        modal.style.borderRadius = '8px';
+
+        const label = document.createElement('div');
+        label.textContent = `Value Estimate for Case: ${caseNum}`;
+        label.style.marginBottom = '8px';
+        label.style.fontWeight = 'bold';
+        modal.appendChild(label);
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.placeholder = 'Enter your estimate ($)';
+        input.style.width = '100%';
+        input.style.fontSize = '1.1em';
+        input.style.marginBottom = '12px';
+        input.style.padding = '6px';
+        input.value = localStorage.getItem('ffl_est_' + caseNum) || '';
+        modal.appendChild(input);
+
+        // Show Final Judgment and difference
+        const fj = getFinalJudgment(mainRow);
+        const fjDiv = document.createElement('div');
+        if (fj !== null) {
+          fjDiv.textContent = `Final Judgment: $${fj.toLocaleString()}`;
+          fjDiv.style.marginBottom = '8px';
+          modal.appendChild(fjDiv);
+        }
+
+        const diffDiv = document.createElement('div');
+        diffDiv.style.marginBottom = '12px';
+        diffDiv.style.fontWeight = 'bold';
+        modal.appendChild(diffDiv);
+
+        function updateDiff() {
+          const est = parseFloat(input.value);
+          if (!isNaN(est) && fj !== null) {
+            const diff = est - fj;
+            diffDiv.textContent = `Difference: $${diff.toLocaleString()}`;
+            diffDiv.style.color = diff >= 0 ? '#4CAF50' : '#f44336';
+          } else {
+            diffDiv.textContent = '';
+          }
+        }
+        input.addEventListener('input', updateDiff);
+        updateDiff();
+
+        const btnRow = document.createElement('div');
+        btnRow.style.textAlign = 'right';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = 'Save';
+        saveBtn.style.marginRight = '8px';
+        saveBtn.style.background = '#4CAF50';
+        saveBtn.style.color = 'white';
+        saveBtn.style.border = 'none';
+        saveBtn.style.padding = '8px 16px';
+        saveBtn.style.cursor = 'pointer';
+        saveBtn.style.borderRadius = '4px';
+        saveBtn.onclick = () => {
+          if (input.value) {
+            localStorage.setItem('ffl_est_' + caseNum, input.value);
+          } else {
+            localStorage.removeItem('ffl_est_' + caseNum);
+          }
+          modal.remove();
+        };
+        btnRow.appendChild(saveBtn);
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.style.background = '#ccc';
+        cancelBtn.style.border = 'none';
+        cancelBtn.style.padding = '8px 16px';
+        cancelBtn.style.cursor = 'pointer';
+        cancelBtn.style.borderRadius = '4px';
+        cancelBtn.onclick = () => modal.remove();
+        btnRow.appendChild(cancelBtn);
+
+        modal.appendChild(btnRow);
+
+        document.body.appendChild(modal);
+        input.focus();
+      }
+    });
+
     // Remove notes column header if present
     const notesTh = table.querySelector('thead th.ffl-notes-header');
     if (notesTh) notesTh.remove();

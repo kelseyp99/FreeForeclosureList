@@ -437,10 +437,12 @@ def generate_html_report_from_sales(sales, county, sales_type):
                 html += f'<td>{cell}</td>'
         html += '</tr>\n'
         
-        # Notes row (hidden by default)
+        # Notes row (hidden by default) with Value Estimate button
         col_count = len(FIELD_ORDER) + 2  # +2 for checkbox and notes button columns
+        case_number = row.get("Case Number", "")
         html += f'<tr class="ffl-notes-row" id="notes-row-{idx}" style="display:none;" data-row="{idx}">'
         html += f'<td colspan="{col_count}" style="background:#f9f9f9; padding:10px;">'
+        html += f'<div style="margin-bottom:8px;"><button type="button" class="ffl-value-btn" data-case="{case_number}" data-row="{idx}" style="background:#4CAF50; color:white; border:none; padding:6px 12px; cursor:pointer; border-radius:4px; font-size:0.9em;">Value Estimate</button></div>'
         html += f'<textarea id="notes-{idx}" rows="4" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; font-family:inherit;">{notes_value}</textarea>'
         html += '</td></tr>\n'
     
