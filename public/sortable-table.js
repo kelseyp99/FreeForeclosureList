@@ -59,6 +59,9 @@ function sortTable(table, col, type, dir) {
 
     // Insert checkboxes and Notes button in each row (if not already present)
     Array.from(table.tBodies[0].rows).forEach((row, idx) => {
+      // Skip notes rows - they shouldn't have checkboxes
+      if (row.classList.contains('ffl-notes-row')) return;
+      
       if (!row.cells[0].querySelector('input[type="checkbox"]')) {
         // Case Number is now shifted by 1 due to new checkbox column
         const caseNum = row.cells[caseNumIdx + 1]?.textContent.trim();
