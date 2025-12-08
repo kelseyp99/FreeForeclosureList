@@ -281,7 +281,60 @@ function sortTable(table, col, type, dir) {
       });
     });
 
-    // Filtering removed: now handled by React sidebar
+    // Apply filters from localStorage
+    function applyFilters() {
+      const hideTimeshare = localStorage.getItem('ffl_filter_timeshare') === '1';
+      const hideBlank = localStorage.getItem('ffl_filter_blank') === '1';
+      let statusFilter = [];
+      try {
+        statusFilter = JSON.parse(localStorage.getItem('ffl_filter_status') || '[]');
+        if (!Array.isArray(statusFilter)) statusFilter = [];
+      } catch (e) { statusFilter = []; }
+
+      // Find column indices
+      let parcelIdx = -1, statusIdx = -1;
+      ths.forEach((th, idx) => {
+        const header = th.textContent.trim().toLowerCase();
+        if (header === 'parcel id') parcelIdx = idx;
+        if (header === 'status') statusIdx = idx;
+      });
+
+      // Filter rows
+      Array.from(table.tBodies[0].rows).forEach(row => {
+        if (row.classList.contains('ffl-notes-row')) return; // Skip notes rows
+        
+        let hide = false;
+
+        // Timeshare filter
+        if (hideTimeshare && parcelIdx !== -1) {
+          const parcel = row.cells[parcelIdx]?.textContent.trim().toLowerCase() || '';
+          if (parcel.includes('timeshare')) hide = true;
+        }
+
+        // Blank parcel ID filter
+        if (hideBlank && parcelIdx !== -1 && !hide) {
+          const parcel = row.cells[parcelIdx]?.textContent.trim() || '';
+          if (parcel === '' || parcel === '-') hide = true;
+        }
+
+        // Status filter
+        if (statusFilter.length > 0 && statusIdx !== -1 && !hide) {
+          const status = row.cells[statusIdx]?.textContent.trim() || '';
+          if (!statusFilter.includes(status)) hide = true;
+        }
+
+        row.style.display = hide ? 'none' : '';
+        // Also hide the notes row if this row is hidden
+        const notesRow = row.nextElementSibling;
+        if (notesRow && notesRow.classList.contains('ffl-notes-row')) {
+          notesRow.style.display = hide ? 'none' : '';
+        }
+      });
+    }
+
+    // Apply filters on load and on storage events
+    applyFilters();
+    window.addEventListener('storage', applyFilters);
   }
 
   document.addEventListener('DOMContentLoaded', function() {

@@ -426,25 +426,32 @@ document.addEventListener('DOMContentLoaded', function() {
     var headers = document.querySelectorAll('thead th');
     var parcelIdIdx = -1;
     var statusIdx = -1;
-    headers.forEach(function(th, idx) {
+    var certHolderIdx = -1;
+    headers.forEach(function(th, idx) {{
         var text = th.textContent.trim().toLowerCase();
         if (text === 'parcel id') parcelIdIdx = idx;
         if (text === 'status') statusIdx = idx;
-    });
+        if (text === 'certificate holder name') certHolderIdx = idx;
+    }});
+    
+    // Owner association words
+    var ownerAssocWords = {json.dumps((params.get('owner_assoc_words', '') or '').split(','))};
+    ownerAssocWords = ownerAssocWords.map(function(w) {{ return w.trim().toLowerCase(); }}).filter(Boolean);
     
     // Function to apply all filters
-    function filterRows() {
+    function filterRows() {{
         var showOnlySelected = showSelectedCheckbox && showSelectedCheckbox.checked;
         var hideTimeshare = localStorage.getItem('ffl_filter_timeshare') === '1';
         var hideBlank = localStorage.getItem('ffl_filter_blank') === '1';
+        var ownerAssocFilter = localStorage.getItem('ffl_filter_owner_assoc') || 'include';
         var statusFilterRaw = localStorage.getItem('ffl_filter_status');
         var statusFilter = [];
-        try {
+        try {{
             var parsed = JSON.parse(statusFilterRaw || '[]');
-            if (Array.isArray(parsed)) {
-                statusFilter = parsed.map(function(s) { return String(s).toLowerCase(); });
-            }
-        } catch (e) {}
+            if (Array.isArray(parsed)) {{
+                statusFilter = parsed.map(function(s) {{ return String(s).toLowerCase(); }});
+            }}
+        }} catch (e) {{}}
         
         tableRows.forEach(function(row) {
             // Skip notes rows - they'll be handled with their parent row
@@ -483,15 +490,29 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Status filter
-            if (show && statusFilter.length > 0 && statusIdx >= 0) {
+            if (show && statusFilter.length > 0 && statusIdx >= 0) {{
                 var statusCell = row.cells[statusIdx];
-                if (statusCell) {
+                if (statusCell) {{
                     var statusText = statusCell.textContent.trim().toLowerCase();
-                    if (!statusFilter.includes(statusText)) {
+                    if (!statusFilter.includes(statusText)) {{
                         show = false;
-                    }
-                }
-            }
+                    }}
+                }}
+            }}
+            
+            // Owner Association filter
+            if (show && ownerAssocFilter !== 'include' && certHolderIdx >= 0) {{
+                var certCell = row.cells[certHolderIdx];
+                if (certCell) {{
+                    var certText = certCell.textContent.trim().toLowerCase();
+                    var isOwnerAssoc = ownerAssocWords.some(function(word) {{ return certText.includes(word); }});
+                    if (ownerAssocFilter === 'only' && !isOwnerAssoc) {{
+                        show = false;
+                    }} else if (ownerAssocFilter === 'exclude' && isOwnerAssoc) {{
+                        show = false;
+                    }}
+                }}
+            }}
             
             // Apply visibility to main row
             row.style.display = show ? '' : 'none';
@@ -534,19 +555,22 @@ document.addEventListener('DOMContentLoaded', function() {
     var lastTimeshare = localStorage.getItem('ffl_filter_timeshare');
     var lastBlank = localStorage.getItem('ffl_filter_blank');
     var lastStatus = localStorage.getItem('ffl_filter_status');
+    var lastOwnerAssoc = localStorage.getItem('ffl_filter_owner_assoc');
     
-    setInterval(function() {
+    setInterval(function() {{
         var currentTimeshare = localStorage.getItem('ffl_filter_timeshare');
         var currentBlank = localStorage.getItem('ffl_filter_blank');
         var currentStatus = localStorage.getItem('ffl_filter_status');
+        var currentOwnerAssoc = localStorage.getItem('ffl_filter_owner_assoc');
         
-        if (currentTimeshare !== lastTimeshare || currentBlank !== lastBlank || currentStatus !== lastStatus) {
+        if (currentTimeshare !== lastTimeshare || currentBlank !== lastBlank || currentStatus !== lastStatus || currentOwnerAssoc !== lastOwnerAssoc) {{
             lastTimeshare = currentTimeshare;
             lastBlank = currentBlank;
             lastStatus = currentStatus;
+            lastOwnerAssoc = currentOwnerAssoc;
             filterRows();
-        }
-    }, 200); // Check every 200ms
+        }}
+    }}, 200); // Check every 200ms
     
     // Also refilter when window gets focus (user might have changed settings)
     window.addEventListener('focus', filterRows);

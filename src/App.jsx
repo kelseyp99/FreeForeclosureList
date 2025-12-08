@@ -45,7 +45,7 @@ function AuctionsMenu({ onSelectReport }) {
 function App() {
   const [selectedCounty, setSelectedCounty] = useState("");
   const [selectedSaleType, setSelectedSaleType] = useState("");
-  const [ownerAssocFilter, setOwnerAssocFilter] = useState('include'); // 'exclude', 'include', 'only'
+  const [ownerAssocFilter, setOwnerAssocFilter] = useState(() => localStorage.getItem('ffl_filter_owner_assoc') || 'include');
   const [hideTimeshare, setHideTimeshare] = useState(() => localStorage.getItem('ffl_filter_timeshare') === '1');
   const [hideBlank, setHideBlank] = useState(() => localStorage.getItem('ffl_filter_blank') === '1');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -147,7 +147,11 @@ function App() {
                   name="ownerAssocFilter"
                   value="exclude"
                   checked={ownerAssocFilter === 'exclude'}
-                  onChange={() => setOwnerAssocFilter('exclude')}
+                  onChange={() => {
+                    setOwnerAssocFilter('exclude');
+                    localStorage.setItem('ffl_filter_owner_assoc', 'exclude');
+                    window.dispatchEvent(new Event('storage'));
+                  }}
                 /> Exclude Owner Associations
               </label>
               <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c' }}>
@@ -156,7 +160,11 @@ function App() {
                   name="ownerAssocFilter"
                   value="include"
                   checked={ownerAssocFilter === 'include'}
-                  onChange={() => setOwnerAssocFilter('include')}
+                  onChange={() => {
+                    setOwnerAssocFilter('include');
+                    localStorage.setItem('ffl_filter_owner_assoc', 'include');
+                    window.dispatchEvent(new Event('storage'));
+                  }}
                 /> Include Owner Associations
               </label>
               <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c' }}>
@@ -165,7 +173,11 @@ function App() {
                   name="ownerAssocFilter"
                   value="only"
                   checked={ownerAssocFilter === 'only'}
-                  onChange={() => setOwnerAssocFilter('only')}
+                  onChange={() => {
+                    setOwnerAssocFilter('only');
+                    localStorage.setItem('ffl_filter_owner_assoc', 'only');
+                    window.dispatchEvent(new Event('storage'));
+                  }}
                 /> Show Only Owner Associations
               </label>
             </div>
