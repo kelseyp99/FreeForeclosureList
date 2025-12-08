@@ -586,15 +586,24 @@ document.addEventListener('DOMContentLoaded', function() {{
     
     // Toggle all row checkboxes when header checkbox is clicked
     if (headerCheckbox) {{
+        console.log('Header checkbox found and event listener attached');
         headerCheckbox.addEventListener('change', function() {{
+            console.log('Header checkbox clicked, checked=' + headerCheckbox.checked);
+            console.log('Attempting to check/uncheck ' + rowCheckboxes.length + ' checkboxes');
             rowCheckboxes.forEach(function(cb) {{
                 cb.checked = headerCheckbox.checked;
             }});
+            console.log('Finished checking/unchecking checkboxes');
             // Only update filter if "Show Selected Only" is actually turned on
             if (showSelectedCheckbox && showSelectedCheckbox.checked) {{
+                console.log('Applying filter because Show Selected Only is on');
                 filterRows();
+            }} else {{
+                console.log('Not applying filter - Show Selected Only is off');
             }}
         }});
+    }} else {{
+        console.log('ERROR: Header checkbox not found!');
     }}
     
     // Listen to localStorage changes (from sidebar filters)

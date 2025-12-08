@@ -37,7 +37,7 @@
 </head>
 <body>
     <div class="report-scroll-container">
-        <div class="sticky-title"><strong>TrueForeclosure &mdash; Orange County Foreclosure Report</strong><br><span style="font-weight: normal; font-size: 0.95em;">Generated: 2025-12-07 20:08:22</span><span style="display: inline-block; margin-left: 60px;"><input type="checkbox" id="show-selected-static" title="Show Selected Only" style="transform: scale(1.2); margin-left: 16px; margin-right: 6px; vertical-align: middle; cursor: pointer;" /><label for="show-selected-static" style="font-size: 15px; color: #7a5c1c; font-weight: 500; user-select: none;">Show Selected Only</label></span></div>
+        <div class="sticky-title"><strong>TrueForeclosure &mdash; Orange County Foreclosure Report</strong><br><span style="font-weight: normal; font-size: 0.95em;">Generated: 2025-12-07 20:09:56</span><span style="display: inline-block; margin-left: 60px;"><input type="checkbox" id="show-selected-static" title="Show Selected Only" style="transform: scale(1.2); margin-left: 16px; margin-right: 6px; vertical-align: middle; cursor: pointer;" /><label for="show-selected-static" style="font-size: 15px; color: #7a5c1c; font-weight: 500; user-select: none;">Show Selected Only</label></span></div>
         <table>
             <thead class="sticky-table-header">
                 <tr><th style="width:36px"><input type="checkbox" id="header-select-all" title="Select/Deselect All" style="transform: scale(1.3); cursor: pointer; vertical-align: middle;" /></th><th>Add Date</th><th>Address</th><th>Assessed Value</th><th>Case Number</th><th>Certificate Holder Name</th><th>City</th><th>Final Judgment</th><th>My Bid</th><th>Opening Bid</th><th>Parcel ID</th><th>Plaintiff Max Bid</th><th>Sale Date</th><th>Status</th><th>Zip</th></tr>
@@ -578,15 +578,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Toggle all row checkboxes when header checkbox is clicked
     if (headerCheckbox) {
+        console.log('Header checkbox found and event listener attached');
         headerCheckbox.addEventListener('change', function() {
+            console.log('Header checkbox clicked, checked=' + headerCheckbox.checked);
+            console.log('Attempting to check/uncheck ' + rowCheckboxes.length + ' checkboxes');
             rowCheckboxes.forEach(function(cb) {
                 cb.checked = headerCheckbox.checked;
             });
+            console.log('Finished checking/unchecking checkboxes');
             // Only update filter if "Show Selected Only" is actually turned on
             if (showSelectedCheckbox && showSelectedCheckbox.checked) {
+                console.log('Applying filter because Show Selected Only is on');
                 filterRows();
+            } else {
+                console.log('Not applying filter - Show Selected Only is off');
             }
         });
+    } else {
+        console.log('ERROR: Header checkbox not found!');
     }
     
     // Listen to localStorage changes (from sidebar filters)
