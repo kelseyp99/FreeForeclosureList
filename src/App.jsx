@@ -8,7 +8,6 @@ import Header from "./Header";
 import GlobalParameterTable from "./components/GlobalParameterTable";
 import SalesReportPanel from "./components/SalesReportPanel";
 import "./App.css";
-import { getStatusFilterArray } from "./utils/statusFilter";
 
 // SalesMenu: Head menu item for Sales that toggles the counties menu
 
