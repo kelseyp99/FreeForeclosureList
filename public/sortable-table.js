@@ -314,46 +314,67 @@ function sortTable(table, col, type, dir) {
         const table = currentRow.closest('table');
         const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
         
-        // Get case number for notes and estimate
-        let caseNumIdx = -1;
-        headers.forEach((h, i) => {
-          if (h.toLowerCase() === 'case number') caseNumIdx = i;
+        // Build a map of header name to cell data
+        const dataMap = {};
+        headers.forEach((header, idx) => {
+          if (header && idx > 0 && header.toLowerCase() !== 'notes') { // Skip checkbox and notes columns
+            const cell = currentRow.cells[idx];
+            if (cell) {
+              const link = cell.querySelector('a');
+              if (link) {
+                const text = link.textContent.trim();
+                const url = link.href;
+                dataMap[header] = {
+                  htmlValue: `<a href="${url}" style="color: #1a73e8; text-decoration: none;">${text}</a>`,
+                  plainValue: `${text} (${url})`
+                };
+              } else {
+                const text = cell.textContent.trim();
+                dataMap[header] = {
+                  htmlValue: text,
+                  plainValue: text
+                };
+              }
+            }
+          }
         });
-        const caseNum = caseNumIdx >= 0 ? currentRow.cells[caseNumIdx]?.textContent.trim() : '';
+        
+        // Get case number for notes and estimate
+        const caseNum = dataMap['Case Number']?.plainValue || '';
+        
+        // Define desired field order (excluding My Bid and Opening Bid)
+        const fieldOrder = [
+          'Add Date',
+          'Sale Date',
+          'Address',
+          'City',
+          'Zip',
+          'Case Number',
+          'Parcel ID',
+          'Certificate Holder Name',
+          'Status',
+          'Assessed Value',
+          'Final Judgment',
+          'Plaintiff Max Bid'
+        ];
         
         // Build HTML formatted vertical summary for Gmail
         let htmlContent = '<div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">';
         let plainTextContent = '';
         
-        headers.forEach((header, idx) => {
-          if (header && idx > 0 && header.toLowerCase() !== 'notes') { // Skip checkbox and notes columns
-            const cell = currentRow.cells[idx];
-            let htmlValue = '';
-            let plainValue = '';
-            
-            if (cell) {
-              // Get text content, but handle links specially
-              const link = cell.querySelector('a');
-              if (link) {
-                const text = link.textContent.trim();
-                const url = link.href;
-                htmlValue = `<a href="${url}" style="color: #1a73e8; text-decoration: none;">${text}</a>`;
-                plainValue = `${text} (${url})`;
-              } else {
-                const text = cell.textContent.trim();
-                htmlValue = text;
-                plainValue = text;
-              }
-            }
+        // Add fields in specified order
+        fieldOrder.forEach(fieldName => {
+          if (dataMap[fieldName]) {
+            const { htmlValue, plainValue } = dataMap[fieldName];
             
             // Add to HTML content with bold labels
             htmlContent += `<div style="margin-bottom: 8px;">`;
-            htmlContent += `<strong style="color: #333; min-width: 200px; display: inline-block;">${header}:</strong> `;
+            htmlContent += `<strong style="color: #333; min-width: 200px; display: inline-block;">${fieldName}:</strong> `;
             htmlContent += `<span style="color: #555;">${htmlValue}</span>`;
             htmlContent += `</div>`;
             
             // Plain text fallback
-            plainTextContent += `${header}: ${plainValue}\n`;
+            plainTextContent += `${fieldName}: ${plainValue}\n`;
           }
         });
         
