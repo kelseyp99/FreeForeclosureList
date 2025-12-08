@@ -29,10 +29,30 @@ export default function GlobalParameterTable() {
 
   async function fetchParams() {
     setLoading(true);
-  const q = query(collection(db, 'parameters'), orderBy(sortCol, sortDir));
+    
+    // Try to load from localStorage first
+    const cachedParams = localStorage.getItem('ffl_global_params');
+    const cachedTimestamp = localStorage.getItem('ffl_global_params_timestamp');
+    const now = Date.now();
+    const cacheAge = cachedTimestamp ? now - parseInt(cachedTimestamp) : Infinity;
+    
+    // Use cache if it's less than 5 minutes old
+    if (cachedParams && cacheAge < 5 * 60 * 1000) {
+      setParams(JSON.parse(cachedParams));
+      setLoading(false);
+      return;
+    }
+    
+    // Otherwise fetch from Firebase
+    const q = query(collection(db, 'parameters'), orderBy(sortCol, sortDir));
     const querySnapshot = await getDocs(q);
     const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setParams(data);
+    
+    // Save to localStorage
+    localStorage.setItem('ffl_global_params', JSON.stringify(data));
+    localStorage.setItem('ffl_global_params_timestamp', now.toString());
+    
     setLoading(false);
   }
 
@@ -47,20 +67,29 @@ export default function GlobalParameterTable() {
   }
 
   async function saveEdit() {
-  const ref = doc(db, 'parameters', editing);
+    const ref = doc(db, 'parameters', editing);
     await updateDoc(ref, form);
     setEditing(null);
+    // Clear cache when updating
+    localStorage.removeItem('ffl_global_params');
+    localStorage.removeItem('ffl_global_params_timestamp');
     fetchParams();
   }
 
   async function handleDelete(id) {
-  await deleteDoc(doc(db, 'parameters', id));
+    await deleteDoc(doc(db, 'parameters', id));
+    // Clear cache when deleting
+    localStorage.removeItem('ffl_global_params');
+    localStorage.removeItem('ffl_global_params_timestamp');
     fetchParams();
   }
 
   async function handleAdd() {
-  await addDoc(collection(db, 'parameters'), form);
+    await addDoc(collection(db, 'parameters'), form);
     setForm({ param: '', paramValue: '' });
+    // Clear cache when adding
+    localStorage.removeItem('ffl_global_params');
+    localStorage.removeItem('ffl_global_params_timestamp');
     fetchParams();
   }
 
