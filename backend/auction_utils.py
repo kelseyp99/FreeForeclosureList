@@ -439,6 +439,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var rowCheckboxes = document.querySelectorAll('.row-select-checkbox');
     var tableRows = document.querySelectorAll('tbody tr');
     
+    console.log('Found ' + rowCheckboxes.length + ' checkboxes');
+    console.log('Found ' + tableRows.length + ' table rows');
+    
     // Find column indices
     var headers = document.querySelectorAll('thead th');
     var parcelIdIdx = -1;
