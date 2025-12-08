@@ -462,22 +462,22 @@ document.addEventListener('DOMContentLoaded', function() {{
     
     // Notes toggle functionality
     var toggleButtons = document.querySelectorAll('.toggle-notes-btn');
-    toggleButtons.forEach(function(btn) {{
-        btn.addEventListener('click', function(e) {{
+    toggleButtons.forEach(function(btn) {{{{
+        btn.addEventListener('click', function(e) {{{{
             e.preventDefault();
             var rowId = this.getAttribute('data-row');
             var notesRow = document.getElementById('notes-row-' + rowId);
-            if (notesRow) {{
-                if (notesRow.style.display === 'none') {{
+            if (notesRow) {{{{
+                if (notesRow.style.display === 'none') {{{{
                     notesRow.style.display = '';
                     this.textContent = '−';
-                }} else {{
+                }}}} else {{{{
                     notesRow.style.display = 'none';
                     this.textContent = '+';
-                }}
-            }}
-        }});
-    }});
+                }}}}
+            }}}}
+        }}}});
+    }}}});
     
     // Find column indices
     var headers = document.querySelectorAll('thead th');
