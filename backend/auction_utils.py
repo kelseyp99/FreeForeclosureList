@@ -534,16 +534,31 @@ document.addEventListener('DOMContentLoaded', function() {
             // Apply visibility to main row
             row.style.display = show ? '' : 'none';
             
-            // Handle associated notes row (if it exists)
+            // Handle associated notes row and estimate box
             var nextRow = row.nextElementSibling;
-            if (nextRow && nextRow.classList.contains('ffl-notes-row')) {
-                if (!show) {
+            if (nextRow && nextRow.classList.contains('ffl-notes-row')) {{
+                if (!show) {{
                     // If main row is hidden, always hide notes row
                     nextRow.style.display = 'none';
-                }
-                // If main row is shown, don't change notes row visibility
-                // (let it stay in its current state - expanded or collapsed)
-            }
+                }} else {{
+                    // If main row is shown, restore notes row visibility
+                    // Check if it was previously expanded (has 'expanded' class or similar)
+                    var toggleBtn = row.querySelector('.toggle-notes-btn');
+                    if (toggleBtn && toggleBtn.textContent.includes('−')) {{
+                        // Notes are expanded, show the row
+                        nextRow.style.display = '';
+                    }} else {{
+                        // Notes are collapsed, keep hidden
+                        nextRow.style.display = 'none';
+                    }}
+                }}
+                
+                // Handle estimate box within notes row
+                var estimateBox = nextRow.querySelector('.estimate-box');
+                if (estimateBox) {{
+                    estimateBox.style.display = show ? '' : 'none';
+                }}
+            }}
         });
     }
     
