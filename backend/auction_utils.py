@@ -380,6 +380,7 @@ def generate_html_report_from_sales(sales, county, sales_type):
             <thead class="sticky-table-header">
                 <tr>'''
     html += '<th style="width:36px"><input type="checkbox" id="header-select-all" title="Select/Deselect All" style="transform: scale(1.3); cursor: pointer; vertical-align: middle;" /></th>'  # Checkbox column
+    html += '<th style="width:50px">Notes</th>'  # Notes button column
     for field, label in FIELD_ORDER:
         html += f'<th>{label}</th>'
     html += '</tr>\n        </thead>\n        <tbody>\n'
@@ -395,7 +396,13 @@ def generate_html_report_from_sales(sales, county, sales_type):
     for idx, row in enumerate(sales):
         # DEBUG: Print all keys for each row to diagnose missing fields
         print(f"[DEBUG] Row {idx} keys: {list(row.keys())}")
-        html += f'<tr><td><input type="checkbox" class="row-select-checkbox" data-row="{idx}" /></td>'  # Checkbox column
+        notes_value = str(row.get("Notes", "")).strip()
+        
+        # Main data row
+        html += f'<tr id="row-{idx}" data-row="{idx}">'
+        html += f'<td><input type="checkbox" class="row-select-checkbox" data-row="{idx}" /></td>'  # Checkbox column
+        html += f'<td><button class="toggle-notes-btn" data-row="{idx}" style="background:#f0f0f0; border:1px solid #ccc; padding:4px 8px; cursor:pointer; border-radius:3px;">+</button></td>'  # Notes button
+        
         for field, _ in FIELD_ORDER:
             # Get cell value directly from Firestore field (with spaces)
             cell = row.get(field, "")
@@ -427,6 +434,13 @@ def generate_html_report_from_sales(sales, county, sales_type):
             else:
                 html += f'<td>{cell}</td>'
         html += '</tr>\n'
+        
+        # Notes row (hidden by default)
+        col_count = len(FIELD_ORDER) + 2  # +2 for checkbox and notes button columns
+        html += f'<tr class="ffl-notes-row" id="notes-row-{idx}" style="display:none;" data-row="{idx}">'
+        html += f'<td colspan="{col_count}" style="background:#f9f9f9; padding:10px;">'
+        html += f'<textarea id="notes-{idx}" rows="4" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; font-family:inherit;">{notes_value}</textarea>'
+        html += '</td></tr>\n'
     
     # Close the table and add scripts AFTER the loop
     html += '        </tbody>\n      </table>\n    </div>'
@@ -441,10 +455,29 @@ document.addEventListener('DOMContentLoaded', function() {{
     var showSelectedCheckbox = document.getElementById('show-selected-static');
     var headerCheckbox = document.getElementById('header-select-all');
     var rowCheckboxes = document.querySelectorAll('.row-select-checkbox');
-    var tableRows = document.querySelectorAll('tbody tr');
+    var tableRows = document.querySelectorAll('tbody tr:not(.ffl-notes-row)');
     
     console.log('Found ' + rowCheckboxes.length + ' checkboxes');
     console.log('Found ' + tableRows.length + ' table rows');
+    
+    // Notes toggle functionality
+    var toggleButtons = document.querySelectorAll('.toggle-notes-btn');
+    toggleButtons.forEach(function(btn) {{
+        btn.addEventListener('click', function(e) {{
+            e.preventDefault();
+            var rowId = this.getAttribute('data-row');
+            var notesRow = document.getElementById('notes-row-' + rowId);
+            if (notesRow) {{
+                if (notesRow.style.display === 'none') {{
+                    notesRow.style.display = '';
+                    this.textContent = '−';
+                }} else {{
+                    notesRow.style.display = 'none';
+                    this.textContent = '+';
+                }}
+            }}
+        }});
+    }});
     
     // Find column indices
     var headers = document.querySelectorAll('thead th');
