@@ -403,7 +403,7 @@ def generate_html_report_from_sales(sales, county, sales_type):
         # Main data row
         html += f'<tr id="row-{idx}" data-row="{idx}">'
         html += f'<td><input type="checkbox" class="row-select-checkbox" data-row="{idx}" /></td>'  # Checkbox column
-        html += f'<td><button class="toggle-notes-btn" data-row="{idx}" style="background:#f0f0f0; border:1px solid #ccc; padding:4px 8px; cursor:pointer; border-radius:3px;">+</button></td>'  # Notes button
+        html += f'<td><button type="button" class="toggle-notes-btn" data-row="{idx}" style="background:#f0f0f0; border:1px solid #ccc; padding:4px 8px; cursor:pointer; border-radius:3px;">+</button></td>'  # Notes button
         
         for field, _ in FIELD_ORDER:
             # Get cell value directly from Firestore field (with spaces)
@@ -465,16 +465,25 @@ document.addEventListener('DOMContentLoaded', function() {{
     // Notes toggle functionality
     var toggleButtons = document.querySelectorAll('.toggle-notes-btn');
     console.log('[DEBUG] Found ' + toggleButtons.length + ' toggle buttons');
-    toggleButtons.forEach(function(btn) {{
+    
+    // Test if first button exists and is clickable
+    if (toggleButtons.length > 0) {{
+        console.log('[DEBUG] First button element:', toggleButtons[0]);
+        console.log('[DEBUG] First button parent:', toggleButtons[0].parentElement);
+        console.log('[DEBUG] First button computed display:', window.getComputedStyle(toggleButtons[0]).display);
+    }}
+    
+    toggleButtons.forEach(function(btn, index) {{
         btn.addEventListener('click', function(e) {{
             e.preventDefault();
+            e.stopPropagation();
             console.log('[DEBUG] Toggle button clicked, row=' + this.getAttribute('data-row'));
             var rowId = this.getAttribute('data-row');
             var notesRow = document.getElementById('notes-row-' + rowId);
             console.log('[DEBUG] Notes row found:', notesRow !== null);
             if (notesRow) {{
-                if (notesRow.style.display === 'none') {{
-                    notesRow.style.display = '';
+                if (notesRow.style.display === 'none' || notesRow.style.display === '') {{
+                    notesRow.style.display = 'table-row';
                     this.textContent = '−';
                     console.log('[DEBUG] Expanded notes row ' + rowId);
                 }} else {{
@@ -483,7 +492,7 @@ document.addEventListener('DOMContentLoaded', function() {{
                     console.log('[DEBUG] Collapsed notes row ' + rowId);
                 }}
             }}
-        }});
+        }}, true);  // Use capture phase
     }});
     console.log('[DEBUG] Notes toggle event listeners attached');
     
