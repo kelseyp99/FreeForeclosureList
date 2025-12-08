@@ -363,7 +363,8 @@ def generate_html_report_from_sales(sales, county, sales_type):
         .sticky-table-header th {{
             position: sticky;
             top: 2.2em;
-            background: #f4f4f4;
+            background: #ffffff;
+            color: #000000;
             z-index: 99;
         }}
         table {{ border-collapse: collapse; width: 100%; }}
