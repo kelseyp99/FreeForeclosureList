@@ -83,16 +83,16 @@ export default function GlobalParameterTable() {
   return (
     <div style={{ padding: 0 }}>
       <h3>Global Parameters</h3>
-      <table border="1" cellPadding="6" style={{ minWidth: 500, borderCollapse: 'separate', background: '#fff' }}>
+      <table border="1" cellPadding="6" style={{ minWidth: 500, borderCollapse: 'separate', background: '#fff', color: '#000' }}>
         <thead>
           <tr>
-            <th style={{ cursor: 'pointer' }} onClick={() => handleSort('param')}>
+            <th style={{ cursor: 'pointer', color: '#000' }} onClick={() => handleSort('param')}>
               Param{sortCol === 'param' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
             </th>
-            <th style={{ cursor: 'pointer' }} onClick={() => handleSort('paramValue')}>
+            <th style={{ cursor: 'pointer', color: '#000' }} onClick={() => handleSort('paramValue')}>
               Value{sortCol === 'paramValue' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
             </th>
-            <th>Actions</th>
+            <th style={{ color: '#000' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
