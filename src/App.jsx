@@ -141,42 +141,45 @@ function App() {
           <div style={{ margin: '18px 0 0 0', width: '100%' }}>
             <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Certificate Holder Type</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16 }}>
-              <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c' }}>
+              <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c', cursor: 'pointer' }}>
                 <input
                   type="radio"
                   name="ownerAssocFilter"
                   value="exclude"
                   checked={ownerAssocFilter === 'exclude'}
-                  onChange={() => {
-                    setOwnerAssocFilter('exclude');
-                    localStorage.setItem('ffl_filter_owner_assoc', 'exclude');
-                    window.dispatchEvent(new Event('storage'));
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setOwnerAssocFilter('exclude');
+                      localStorage.setItem('ffl_filter_owner_assoc', 'exclude');
+                    }
                   }}
                 /> Exclude Owner Associations
               </label>
-              <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c' }}>
+              <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c', cursor: 'pointer' }}>
                 <input
                   type="radio"
                   name="ownerAssocFilter"
                   value="include"
                   checked={ownerAssocFilter === 'include'}
-                  onChange={() => {
-                    setOwnerAssocFilter('include');
-                    localStorage.setItem('ffl_filter_owner_assoc', 'include');
-                    window.dispatchEvent(new Event('storage'));
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setOwnerAssocFilter('include');
+                      localStorage.setItem('ffl_filter_owner_assoc', 'include');
+                    }
                   }}
                 /> Include Owner Associations
               </label>
-              <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c' }}>
+              <label style={{ fontWeight: 400, fontSize: 15, color: '#7a5c1c', cursor: 'pointer' }}>
                 <input
                   type="radio"
                   name="ownerAssocFilter"
                   value="only"
                   checked={ownerAssocFilter === 'only'}
-                  onChange={() => {
-                    setOwnerAssocFilter('only');
-                    localStorage.setItem('ffl_filter_owner_assoc', 'only');
-                    window.dispatchEvent(new Event('storage'));
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setOwnerAssocFilter('only');
+                      localStorage.setItem('ffl_filter_owner_assoc', 'only');
+                    }
                   }}
                 /> Show Only Owner Associations
               </label>
