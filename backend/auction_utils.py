@@ -784,19 +784,49 @@ def backup_to_dropbox():
 
 
 
-def buildAndUpload(county, sale_type):
-    print("=== auction_utils.py is running ===")
-    csv_path = f"/Users/tinman/Downloads/QuickSearch.csv"
+def buildAndUpload(county, sale_type, csv_path=None):
+    """
+    Process a QuickSearch CSV, generate HTML report, and deploy to Firebase.
+    
+    Args:
+        county: County name (e.g., "Orange")
+        sale_type: Sale type (e.g., "Foreclosure" or "TaxDeed")
+        csv_path: Optional path to CSV file. If not provided, defaults to /Users/tinman/Downloads/QuickSearch.csv
+    
+    Returns:
+        dict: Result containing success status and paths
+    """
+    print("=== auction_utils.py buildAndUpload is running ===")
+    
+    # Use provided csv_path or default to Downloads
+    if csv_path is None:
+        csv_path = "/Users/tinman/Downloads/QuickSearch.csv"
+    
+    print(f"[INFO] Processing CSV: {csv_path}")
+    print(f"[INFO] County: {county}, Sale Type: {sale_type}")
+    
+    # Process CSV and upload to Firestore
     result = process_quicksearch_to_auctions(county, sale_type, csv_path)
-    print(f"Processed QuickSearch: {result}")
+    print(f"[SUCCESS] Processed QuickSearch: {result}")
+    
     # Generate report from Firestore
-    print(f"[DEBUG] Generating report for county='{county}', sale_type='{sale_type}'")
+    print(f"[INFO] Generating HTML report for county='{county}', sale_type='{sale_type}'")
     output_path = generate_html_report_from_firestore(county, sale_type)
-    print(f"[DEBUG] Generated report: {output_path}")
-    # Upload report and deploy
+    print(f"[SUCCESS] Generated report: {output_path}")
+    
+    # Upload report and deploy to Firebase
+    print(f"[INFO] Uploading report and deploying to Firebase...")
     upload_result = upload_report_and_mark_updated(output_path, county, sale_type)
-    print(f"Upload and deploy result: {upload_result}")
-    exit(0)
+    print(f"[SUCCESS] Upload and deploy complete: {upload_result}")
+    
+    return {
+        "success": True,
+        "csv_path": csv_path,
+        "report_path": output_path,
+        "upload_result": upload_result,
+        "county": county,
+        "sale_type": sale_type
+    }
 
 
 import sys
@@ -824,6 +854,22 @@ if __name__ == "__main__":
         sales_type = arg(3)
         output_path = arg(4)
         print(upload_report_and_mark_updated(output_path, county, sales_type))
+    elif arg(1) == "buildAndUpload":
+        # Usage: python auction_utils.py buildAndUpload <county> <sale_type> [csv_path]
+        # Example: python auction_utils.py buildAndUpload Orange Foreclosure /path/to/file.csv
+        # Example: python auction_utils.py buildAndUpload Orange Foreclosure (uses default Downloads path)
+        county = arg(2)
+        sale_type = arg(3)
+        csv_path = arg(4)  # Optional, will use default if None
+        if not county or not sale_type:
+            print(json.dumps({
+                "success": False,
+                "error": "County and sale_type are required",
+                "usage": "python auction_utils.py buildAndUpload <county> <sale_type> [csv_path]"
+            }))
+            exit(1)
+        result = buildAndUpload(county, sale_type, csv_path)
+        print(json.dumps(result, indent=2, default=str))
     elif arg(1) == "get_next_sale_cli":
         # CLI wrapper for UiPath: outputs JSON that can be parsed
         # Usage: python auction_utils.py get_next_sale_cli [counties]
