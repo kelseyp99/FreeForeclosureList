@@ -7,6 +7,8 @@ import AuctionParametersPage from "./pages/AuctionParameters";
 import Header from "./Header";
 import GlobalParameterTable from "./components/GlobalParameterTable";
 import SalesReportPanel from "./components/SalesReportPanel";
+import { auth } from "./firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import "./App.css";
 
 // SalesMenu: Head menu item for Sales that toggles the counties menu
@@ -49,6 +51,7 @@ function App() {
   const [hideTimeshare, setHideTimeshare] = useState(() => localStorage.getItem('ffl_filter_timeshare') === '1');
   const [hideBlank, setHideBlank] = useState(() => localStorage.getItem('ffl_filter_blank') === '1');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [user, setUser] = useState(null);
   const [statusFilter, setStatusFilter] = useState(() => {
     try {
       let val = JSON.parse(localStorage.getItem('ffl_filter_status') || '[]');
@@ -62,6 +65,15 @@ function App() {
     ? `/reports/sales_report_${selectedCounty.toLowerCase().replace(/\s/g, "_")}_${selectedSaleType.toLowerCase().replace(/\s/g, "")}.html`
     : null;
   const navigate = useNavigate();
+  
+  // Check if user is admin
+  const isAdmin = user?.email === 'werkhardor@gmail.com';
+
+  // Listen to auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
+    return () => unsubscribe();
+  }, []);
 
   function handleExternalClick(e) {
     // Only track left-clicks on anchor tags with target _blank
@@ -233,25 +245,28 @@ function App() {
               </label>
             </div>
           </div>
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, width: '100%' }}>
-            <div style={{ marginTop: 18, marginBottom: 2, fontWeight: 700, color: '#7a5c1c', fontSize: 15, letterSpacing: 0.5 }}>Administration</div>
-            <a
-              href="/auction-parameters"
-              style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 16, marginLeft: 12 }}
-              onClick={() => {
-                setSelectedCounty("");
-                setSelectedSaleType("");
-              }}
-            >Auction Parameters</a>
-            <a
-              href="/global-parameters"
-              style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 16, marginLeft: 12 }}
-              onClick={() => {
-                setSelectedCounty("");
-                setSelectedSaleType("");
-              }}
-            >Global Parameters</a>
-          </nav>
+          {/* Admin section - only visible to werkhardor@gmail.com */}
+          {isAdmin && (
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, width: '100%' }}>
+              <div style={{ marginTop: 18, marginBottom: 2, fontWeight: 700, color: '#7a5c1c', fontSize: 15, letterSpacing: 0.5 }}>Administration</div>
+              <a
+                href="/auction-parameters"
+                style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 16, marginLeft: 12 }}
+                onClick={() => {
+                  setSelectedCounty("");
+                  setSelectedSaleType("");
+                }}
+              >Auction Parameters</a>
+              <a
+                href="/global-parameters"
+                style={{ color: '#0077cc', textDecoration: 'none', fontWeight: 600, fontSize: 16, marginLeft: 12 }}
+                onClick={() => {
+                  setSelectedCounty("");
+                  setSelectedSaleType("");
+                }}
+              >Global Parameters</a>
+            </nav>
+          )}
         </aside>
         {/* Main content area */}
         <main className="main-content" style={{ padding: '40px 32px 0 32px', flex: 1 }}>
@@ -274,10 +289,19 @@ function App() {
 }
 
 function RoutedApp() {
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
+    return () => unsubscribe();
+  }, []);
+  
+  const isAdmin = user?.email === 'werkhardor@gmail.com';
+  
   return (
     <Routes>
-      <Route path="/auction-parameters" element={<AuctionsPanel />} />
-      <Route path="/global-parameters" element={<GlobalParameterTable />} />
+      {isAdmin && <Route path="/auction-parameters" element={<AuctionsPanel />} />}
+      {isAdmin && <Route path="/global-parameters" element={<GlobalParameterTable />} />}
       <Route path="/*" element={<App />} />
     </Routes>
   );

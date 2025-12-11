@@ -188,6 +188,129 @@ def get_next_sale_json(min_hours=0, counties=None):
     }
     return json.dumps(result)
 
+def calculate_wait_time_until_midnight(counties=None, min_hours=24):
+    """
+    Calculate how long to wait between processing sales to evenly distribute work until midnight.
+    
+    Args:
+        counties: List of county names to check (or None for all counties)
+        min_hours: Minimum hours that must pass before a sale is reprocessed (default 24)
+    
+    Returns:
+        dict: {
+            "sales_needing_update": int,  # Number of sales that will need updating by midnight
+            "wait_time_seconds": float,   # Time to wait between processing each sale
+            "wait_time_minutes": float,   # Wait time in minutes for convenience
+            "time_to_midnight_seconds": float,  # Seconds until midnight
+            "counties_checked": list      # List of counties checked
+        }
+    """
+    from datetime import datetime, timezone, timedelta
+    
+    db = _get_db()
+    params_ref = db.collection("auction_parameters")
+    docs = list(params_ref.stream())
+    now = datetime.now(timezone.utc)
+    
+    # Calculate midnight tonight (local time, then convert to UTC)
+    local_now = datetime.now()
+    midnight_tonight = datetime.combine(local_now.date() + timedelta(days=1), datetime.min.time())
+    # Convert to UTC-aware datetime
+    from datetime import timezone as tz
+    midnight_tonight_utc = midnight_tonight.replace(tzinfo=timezone.utc)
+    time_to_midnight = (midnight_tonight_utc - now).total_seconds()
+    
+    # Normalize counties input
+    if counties is not None:
+        if isinstance(counties, str):
+            counties = [counties]
+        counties = set(c.strip().lower() for c in counties)
+    
+    # Helper: decide whether we should process this county/sale_type
+    def should_process(data, sale_type):
+        if sale_type.lower() == "foreclosure":
+            return data.get("processForeclosure", data.get("ForeclosureInclude", True))
+        if sale_type.lower() == "tax deed":
+            return data.get("processTaxDeed", data.get("TaxDeedInclude", True))
+        return True
+    
+    # Count sales that will need updating by midnight
+    sales_needing_update = 0
+    
+    for doc in docs:
+        data = doc.to_dict()
+        county = doc.id
+        
+        # Filter by counties if specified
+        if counties is not None and county.strip().lower() not in counties:
+            continue
+        
+        fc_time = data.get("ForeclosureLastUpdate")
+        td_time = data.get("TaxDeedLastUpdate")
+        foreclosure_url = data.get("List")
+        taxdeed_url = data.get("TaxDeedList")
+        
+        # Check both Foreclosure and Tax Deed for this county
+        for sale_type, last_update, url in [
+            ("Foreclosure", fc_time, foreclosure_url),
+            ("Tax Deed", td_time, taxdeed_url)
+        ]:
+            # Skip if not configured to process
+            if not should_process(data, sale_type):
+                continue
+            
+            # Skip if no URL (can't process anyway)
+            if not url:
+                continue
+            
+            # If no last update, it needs updating
+            if not last_update:
+                sales_needing_update += 1
+                continue
+            
+            # Convert last_update to UTC datetime
+            if hasattr(last_update, 'replace'):
+                last_update_dt = last_update.replace(tzinfo=timezone.utc)
+            else:
+                last_update_dt = datetime.fromisoformat(str(last_update))
+            
+            # Calculate hours since last update
+            hours_since_update = (now - last_update_dt).total_seconds() / 3600
+            
+            # Calculate hours until midnight
+            hours_until_midnight = time_to_midnight / 3600
+            
+            # Will min_hours be exceeded by midnight?
+            hours_at_midnight = hours_since_update + hours_until_midnight
+            if hours_at_midnight >= min_hours:
+                sales_needing_update += 1
+    
+    # Calculate wait time
+    if sales_needing_update == 0:
+        wait_time_seconds = 0
+        wait_time_minutes = 0
+    else:
+        wait_time_seconds = time_to_midnight / sales_needing_update
+        wait_time_minutes = wait_time_seconds / 60
+    
+    result = {
+        "sales_needing_update": sales_needing_update,
+        "wait_time_seconds": wait_time_seconds,
+        "wait_time_minutes": wait_time_minutes,
+        "time_to_midnight_seconds": time_to_midnight,
+        "time_to_midnight_hours": time_to_midnight / 3600,
+        "counties_checked": list(counties) if counties else "all",
+        "min_hours": min_hours
+    }
+    
+    return result
+
+def calculate_wait_time_json(counties=None, min_hours=24):
+    """JSON wrapper for calculate_wait_time_until_midnight"""
+    import json
+    result = calculate_wait_time_until_midnight(counties=counties, min_hours=min_hours)
+    return json.dumps(result, indent=2, default=str)
+
 def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dist/reports'):
     """
     Ensures the report HTML exists, copies it to public/reports for deployment,
@@ -769,9 +892,11 @@ def mark_county_sale_type_excluded(county, sale_type):
 
 def backup_to_dropbox():
     """
-    Copies this script to Dropbox for backup.
+    Copies this script and sortable-table.js to Dropbox for backup.
     """
     import shutil
+    
+    # Backup auction_utils.py
     src = os.path.abspath(__file__)
     dst_dir = "/Users/tinman/Dropbox/SmartCities/FreeForeclosureList"
     dst = os.path.join(dst_dir, os.path.basename(src))
@@ -780,7 +905,19 @@ def backup_to_dropbox():
         shutil.copy2(src, dst)
         print(f"[INFO] Copied {src} to {dst}")
     except Exception as e:
-        print(f"[ERROR] Could not copy to Dropbox: {e}")
+        print(f"[ERROR] Could not copy auction_utils.py to Dropbox: {e}")
+    
+    # Backup sortable-table.js
+    js_src = os.path.join(os.path.dirname(__file__), '..', 'public', 'sortable-table.js')
+    js_src = os.path.abspath(js_src)
+    public_dst_dir = os.path.join(dst_dir, 'public')
+    js_dst = os.path.join(public_dst_dir, 'sortable-table.js')
+    try:
+        os.makedirs(public_dst_dir, exist_ok=True)
+        shutil.copy2(js_src, js_dst)
+        print(f"[INFO] Copied {js_src} to {js_dst}")
+    except Exception as e:
+        print(f"[ERROR] Could not copy sortable-table.js to Dropbox: {e}")
 
 
 
@@ -891,6 +1028,29 @@ if __name__ == "__main__":
     elif arg(1) == "upload_to_dropbox":
         print("copying to dropbox...")
         backup_to_dropbox()
+    elif arg(1) == "calculate_wait_time":
+        # Usage: python auction_utils.py calculate_wait_time [counties] [min_hours]
+        # Example: python auction_utils.py calculate_wait_time "Miami-Dade;Broward" 24
+        # Example: python auction_utils.py calculate_wait_time "" 24  (all counties)
+        counties_arg = arg(2)
+        min_hours_arg = arg(3)
+        
+        counties = None
+        if counties_arg and counties_arg.strip():
+            counties = [c.strip() for c in counties_arg.split(";") if c.strip()]
+        
+        min_hours = 24  # default
+        if min_hours_arg:
+            try:
+                min_hours = float(min_hours_arg)
+            except ValueError:
+                print(json.dumps({
+                    "success": False,
+                    "error": f"Invalid min_hours value: {min_hours_arg}. Must be a number."
+                }))
+                exit(1)
+        
+        print(calculate_wait_time_json(counties=counties, min_hours=min_hours))
     else:
         # Default action if no or unknown argument is given
         refreshSales(counties=None)
