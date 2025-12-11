@@ -311,6 +311,200 @@ def calculate_wait_time_json(counties=None, min_hours=24):
     result = calculate_wait_time_until_midnight(counties=counties, min_hours=min_hours)
     return json.dumps(result, indent=2, default=str)
 
+def check_blank_fields_firestore(field_names, county=None, sale_type=None):
+    """
+    Check if specified fields are blank in the most recent sale property (by Add Date).
+    This is a local implementation that queries Firestore directly.
+    
+    Args:
+        field_names: List of field names to check (e.g., ["Parcel ID", "Address", "City"])
+        county: Optional county filter (e.g., "Orange")
+        sale_type: Optional sale type filter (e.g., "Foreclosure" or "TaxDeed")
+    
+    Returns:
+        dict: {
+            "has_blank_fields": bool,
+            "blank_fields": list,
+            "property_id": str,
+            "case_number": str,
+            "add_date": str,
+            "sale_date": str,
+            "address": str,
+            "county": str,
+            "sale_type": str,
+            "all_field_values": dict
+        }
+    """
+    from datetime import datetime
+    
+    db = _get_db()
+    
+    # Get all sales matching criteria and find the most recent by Add Date
+    query = db.collection('sales')
+    
+    if county:
+        query = query.where('County', '==', county)
+    
+    if sale_type:
+        query = query.where('SaleType', '==', sale_type)
+    
+    docs = list(query.stream())
+    
+    if not docs:
+        return {
+            "error": "No sales found matching criteria",
+            "has_blank_fields": None,
+            "blank_fields": [],
+            "property_id": None,
+            "case_number": None,
+            "add_date": None,
+            "sale_date": None,
+            "address": None,
+            "county": county,
+            "sale_type": sale_type,
+            "all_field_values": {}
+        }
+    
+    # Find the most recent by Add Date
+    most_recent_doc = None
+    most_recent_date = None
+    
+    for doc in docs:
+        data = doc.to_dict()
+        add_date_str = data.get('Add Date')
+        
+        if add_date_str:
+            try:
+                # Parse date in format MM/DD/YYYY
+                add_date = datetime.strptime(add_date_str, '%m/%d/%Y')
+                if most_recent_date is None or add_date > most_recent_date:
+                    most_recent_date = add_date
+                    most_recent_doc = doc
+            except:
+                pass
+    
+    # If no valid dates found, just use the first doc
+    if most_recent_doc is None:
+        most_recent_doc = docs[0]
+    
+    data = most_recent_doc.to_dict()
+    
+    # Check which fields are blank
+    blank_fields = []
+    all_field_values = {}
+    
+    for field_name in field_names:
+        value = data.get(field_name)
+        all_field_values[field_name] = value
+        
+        # Consider blank if None, empty string, or just a dash
+        if value is None or value == '' or value == '-':
+            blank_fields.append(field_name)
+    
+    result = {
+        "has_blank_fields": len(blank_fields) > 0,
+        "blank_fields": blank_fields,
+        "property_id": most_recent_doc.id,
+        "case_number": data.get('Case Number', most_recent_doc.id),
+        "add_date": data.get('Add Date'),
+        "sale_date": data.get('Sale Date'),
+        "address": data.get('Address'),
+        "county": data.get('County'),
+        "sale_type": data.get('SaleType'),
+        "all_field_values": all_field_values
+    }
+    
+    return result
+
+def check_blank_fields_json(field_names, county=None, sale_type=None):
+    """JSON wrapper for check_blank_fields_firestore"""
+    import json
+    if isinstance(field_names, str):
+        # Parse comma-separated string
+        field_names = [f.strip() for f in field_names.split(',') if f.strip()]
+    result = check_blank_fields_firestore(field_names, county, sale_type)
+    return json.dumps(result, indent=2, default=str)
+
+def update_sale_fields_firestore(case_number, field_updates):
+    """
+    Update specific fields in a Firestore sale document.
+    
+    Args:
+        case_number: The Case Number (document ID) of the sale to update
+        field_updates: Dictionary of field names and their new values
+                      e.g., {"Parcel ID": "12345", "Address": "123 Main St", "City": "Orlando"}
+    
+    Returns:
+        dict: {
+            "success": bool,
+            "case_number": str,
+            "updated_fields": list,
+            "error": str (if failed)
+        }
+    """
+    import json
+    
+    db = _get_db()
+    
+    try:
+        # Get the document reference
+        doc_ref = db.collection("sales").document(str(case_number))
+        
+        # Check if document exists
+        doc = doc_ref.get()
+        if not doc.exists:
+            return {
+                "success": False,
+                "case_number": case_number,
+                "error": f"Sale with Case Number '{case_number}' not found"
+            }
+        
+        # Update the fields
+        doc_ref.update(field_updates)
+        
+        return {
+            "success": True,
+            "case_number": case_number,
+            "updated_fields": list(field_updates.keys()),
+            "updated_values": field_updates
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "case_number": case_number,
+            "error": str(e)
+        }
+
+def update_sale_fields_json(case_number, field_updates_json):
+    """
+    JSON wrapper for update_sale_fields_firestore.
+    
+    Args:
+        case_number: The Case Number (document ID) of the sale to update
+        field_updates_json: JSON string or dict of field names and values
+                           e.g., '{"Parcel ID": "12345", "Address": "123 Main St"}'
+    
+    Returns:
+        JSON string with result
+    """
+    import json
+    
+    # Parse JSON if it's a string
+    if isinstance(field_updates_json, str):
+        try:
+            field_updates = json.loads(field_updates_json)
+        except json.JSONDecodeError as e:
+            return json.dumps({
+                "success": False,
+                "error": f"Invalid JSON: {str(e)}"
+            })
+    else:
+        field_updates = field_updates_json
+    
+    result = update_sale_fields_firestore(case_number, field_updates)
+    return json.dumps(result, indent=2, default=str)
+
 def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dist/reports'):
     """
     Ensures the report HTML exists, copies it to public/reports for deployment,
@@ -1051,6 +1245,40 @@ if __name__ == "__main__":
                 exit(1)
         
         print(calculate_wait_time_json(counties=counties, min_hours=min_hours))
+    elif arg(1) == "check_blank_fields":
+        # Usage: python auction_utils.py check_blank_fields "Parcel ID,Address,City" [county] [sale_type]
+        # Example: python auction_utils.py check_blank_fields "Parcel ID,Address,City" Orange Foreclosure
+        # Example: python auction_utils.py check_blank_fields "Parcel ID,Address"
+        field_names_arg = arg(2)
+        county_arg = arg(3)
+        sale_type_arg = arg(4)
+        
+        if not field_names_arg:
+            print(json.dumps({
+                "success": False,
+                "error": "field_names is required",
+                "usage": "python auction_utils.py check_blank_fields \"Field1,Field2,Field3\" [county] [sale_type]"
+            }))
+            exit(1)
+        
+        print(check_blank_fields_json(field_names_arg, county_arg, sale_type_arg))
+    elif arg(1) == "update_sale_fields":
+        # Usage: python auction_utils.py update_sale_fields <case_number> '<json_field_updates>'
+        # Example: python auction_utils.py update_sale_fields "2025-CA-003741-O" '{"Parcel ID": "12345", "Address": "123 Main St"}'
+        # Example: python auction_utils.py update_sale_fields "2025-CA-003741-O" '{"Final Judgment": "150000", "Plaintiff Max Bid": "100000"}'
+        case_number_arg = arg(2)
+        field_updates_arg = arg(3)
+        
+        if not case_number_arg or not field_updates_arg:
+            print(json.dumps({
+                "success": False,
+                "error": "case_number and field_updates are required",
+                "usage": "python auction_utils.py update_sale_fields <case_number> '<json_field_updates>'",
+                "example": 'python auction_utils.py update_sale_fields "2025-CA-003741-O" \'{"Parcel ID": "12345", "Address": "123 Main St"}\''
+            }))
+            exit(1)
+        
+        print(update_sale_fields_json(case_number_arg, field_updates_arg))
     else:
         # Default action if no or unknown argument is given
         refreshSales(counties=None)
