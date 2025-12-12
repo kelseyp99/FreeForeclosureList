@@ -12,14 +12,21 @@ def uipath_test():
 # Global db instance - will be lazily initialized
 _db_instance = None
 
-def _get_db():
-    """Lazy-load Firestore client to avoid initialization errors when script is loaded."""
+def _get_db(service_account_path=None):
+    """
+    Lazy-load Firestore client to avoid initialization errors when script is loaded.
+    Optionally accepts a service_account_path (overrides default).
+    Uses FIREBASE_ADMIN_JSON env var if set, otherwise defaults to Mac path.
+    """
     global _db_instance
     if _db_instance is None:
         from google.cloud import firestore
         from google.oauth2 import service_account
-        SERVICE_ACCOUNT_PATH = "/Users/tinman/Projects/FreeForeclosureList/backend/foreclosure-15f09-firebase-adminsdk-fbsvc-0fd54751e3.json"
-        credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_PATH)
+        import os
+        if service_account_path is None:
+            # Prefer FIREBASE_ADMIN_JSON for cross-platform compatibility
+            service_account_path = os.environ.get('FIREBASE_ADMIN_JSON', '/Users/tinman/Projects/FreeForeclosureList/backend/foreclosure-15f09-firebase-adminsdk-fbsvc-0fd54751e3.json')
+        credentials = service_account.Credentials.from_service_account_file(service_account_path)
         _db_instance = firestore.Client(credentials=credentials)
     return _db_instance
 
@@ -28,7 +35,6 @@ def process_quicksearch_to_auctions( county, sale_type, csv_path):
     import os
     import re
     import csv
-    
     db = _get_db()
 
     # --- DEBUG: Print Firestore project and test write ---
@@ -102,7 +108,7 @@ def get_next_sale(min_hours=0, counties=None):
     Returns (county, sale_type, url) for manual use, or dict for JSON output if requested.
     """
     from datetime import datetime, timezone
-    
+
     db = _get_db()
     params_ref = db.collection("auction_parameters")
     docs = list(params_ref.stream())
@@ -206,7 +212,7 @@ def calculate_wait_time_until_midnight(counties=None, min_hours=24):
         }
     """
     from datetime import datetime, timezone, timedelta
-    
+
     db = _get_db()
     params_ref = db.collection("auction_parameters")
     docs = list(params_ref.stream())
@@ -336,9 +342,9 @@ def check_blank_fields_firestore(field_names, county=None, sale_type=None):
         }
     """
     from datetime import datetime
-    
+
     db = _get_db()
-    
+
     # Get all sales matching criteria and find the most recent by Add Date
     query = db.collection('sales')
     
@@ -443,9 +449,9 @@ def update_sale_fields_firestore(case_number, field_updates):
         }
     """
     import json
-    
+
     db = _get_db()
-    
+
     try:
         # Get the document reference
         doc_ref = db.collection("sales").document(str(case_number))
@@ -514,7 +520,7 @@ def upload_report_and_mark_updated(report_path, county, sale_type, dest_dir='dis
     import datetime
     import os
     import subprocess
-    
+
     db = _get_db()
 
     # 1. Always copy to public/reports (for deploy)
@@ -588,7 +594,7 @@ def filter_sales(sales, county, sales_type):
     return filtered
 
 def generate_html_report_from_firestore(county, sales_type):
-    # Uses the global db object (already created at the top of your file
+    # Uses the global db object (already created at the top of your file)
     db = _get_db()
     sales_ref = db.collection('sales')
     docs = sales_ref.stream()
@@ -1084,7 +1090,7 @@ def mark_county_sale_type_excluded(county, sale_type):
     doc_ref.set({field: False}, merge=True)
     print(f"[INFO] Marked {county} {sale_type} as excluded (set {field}=False)")
 
-def backup_to_dropbox():
+def backup_to_dropbox(service_account_path=None):
     """
     Copies this script and sortable-table.js to Dropbox for backup.
     """
@@ -1142,7 +1148,7 @@ def buildAndUpload(county, sale_type, csv_path=None):
     
     # Generate report from Firestore
     print(f"[INFO] Generating HTML report for county='{county}', sale_type='{sale_type}'")
-    output_path = generate_html_report_from_firestore(county, sale_type)
+    output_path = generate_htmlgreport_from_firestore(county, sale_type)
     print(f"[SUCCESS] Generated report: {output_path}")
     
     # Upload report and deploy to Firebase
@@ -1176,42 +1182,43 @@ if __name__ == "__main__":
     import re
     import json
     from datetime import datetime
+    # Optional: allow service account path as last argument or env var
+    service_account_path = None
+    if len(sys.argv) > 1 and sys.argv[-1].endswith('.json') and os.path.isfile(sys.argv[-1]):
+        service_account_path = sys.argv[-1]
+        sys.argv = sys.argv[:-1]
+    else:
+        service_account_path = os.environ.get("FIRESTORE_SERVICE_ACCOUNT_PATH")
+
     if arg(1) == "generate_html_report_from_firestore":
         county = arg(2)
         sales_type = arg(3)
-        print(generate_html_report_from_firestore(county, sales_type))
+        print(generate_html_report_from_firestore(county, sales_type, service_account_path))
     elif arg(1) == "upload_report_and_mark_updated":
         county = arg(2)
         sales_type = arg(3)
         output_path = arg(4)
-        print(upload_report_and_mark_updated(output_path, county, sales_type))
+        print(upload_report_and_mark_updated(output_path, county, sales_type, service_account_path=service_account_path))
     elif arg(1) == "buildAndUpload":
-        # Usage: python auction_utils.py buildAndUpload <county> <sale_type> [csv_path]
-        # Example: python auction_utils.py buildAndUpload Orange Foreclosure /path/to/file.csv
-        # Example: python auction_utils.py buildAndUpload Orange Foreclosure (uses default Downloads path)
         county = arg(2)
         sale_type = arg(3)
-        csv_path = arg(4)  # Optional, will use default if None
+        csv_path = arg(4)
         if not county or not sale_type:
             print(json.dumps({
                 "success": False,
                 "error": "County and sale_type are required",
-                "usage": "python auction_utils.py buildAndUpload <county> <sale_type> [csv_path]"
+                "usage": "python auction_utils.py buildAndUpload <county> <sale_type> [csv_path] [service_account.json]"
             }))
             exit(1)
-        result = buildAndUpload(county, sale_type, csv_path)
+        result = buildAndUpload(county, sale_type, csv_path, service_account_path=service_account_path)
         print(json.dumps(result, indent=2, default=str))
     elif arg(1) == "get_next_sale_cli":
-        # CLI wrapper for UiPath: outputs JSON that can be parsed
-        # Usage: python auction_utils.py get_next_sale_cli [counties]
-        # Example: python auction_utils.py get_next_sale_cli "Miami-Dade;Broward"
         counties_arg = arg(2)
         counties = None
         if counties_arg:
             counties = [c.strip() for c in counties_arg.split(";") if c.strip()]
         print(get_next_sale_json(min_hours=0, counties=counties))
     elif arg(1) == "refreshSales":
-        # Usage: python auction_utils.py refreshSales Miami-Dade;Broward;Palm Beach;Monroe
         counties_arg = " ".join(sys.argv[2:]) if len(sys.argv) > 2 else None
         counties = None
         if counties_arg:
@@ -1221,18 +1228,13 @@ if __name__ == "__main__":
         refreshSales(counties=counties)
     elif arg(1) == "upload_to_dropbox":
         print("copying to dropbox...")
-        backup_to_dropbox()
+        backup_to_dropbox(service_account_path=service_account_path)
     elif arg(1) == "calculate_wait_time":
-        # Usage: python auction_utils.py calculate_wait_time [counties] [min_hours]
-        # Example: python auction_utils.py calculate_wait_time "Miami-Dade;Broward" 24
-        # Example: python auction_utils.py calculate_wait_time "" 24  (all counties)
         counties_arg = arg(2)
         min_hours_arg = arg(3)
-        
         counties = None
         if counties_arg and counties_arg.strip():
             counties = [c.strip() for c in counties_arg.split(";") if c.strip()]
-        
         min_hours = 24  # default
         if min_hours_arg:
             try:
@@ -1243,41 +1245,30 @@ if __name__ == "__main__":
                     "error": f"Invalid min_hours value: {min_hours_arg}. Must be a number."
                 }))
                 exit(1)
-        
         print(calculate_wait_time_json(counties=counties, min_hours=min_hours))
     elif arg(1) == "check_blank_fields":
-        # Usage: python auction_utils.py check_blank_fields "Parcel ID,Address,City" [county] [sale_type]
-        # Example: python auction_utils.py check_blank_fields "Parcel ID,Address,City" Orange Foreclosure
-        # Example: python auction_utils.py check_blank_fields "Parcel ID,Address"
         field_names_arg = arg(2)
         county_arg = arg(3)
         sale_type_arg = arg(4)
-        
         if not field_names_arg:
             print(json.dumps({
                 "success": False,
                 "error": "field_names is required",
-                "usage": "python auction_utils.py check_blank_fields \"Field1,Field2,Field3\" [county] [sale_type]"
+                "usage": "python auction_utils.py check_blank_fields \"Field1,Field2,Field3\" [county] [sale_type] [service_account.json]"
             }))
             exit(1)
-        
         print(check_blank_fields_json(field_names_arg, county_arg, sale_type_arg))
     elif arg(1) == "update_sale_fields":
-        # Usage: python auction_utils.py update_sale_fields <case_number> '<json_field_updates>'
-        # Example: python auction_utils.py update_sale_fields "2025-CA-003741-O" '{"Parcel ID": "12345", "Address": "123 Main St"}'
-        # Example: python auction_utils.py update_sale_fields "2025-CA-003741-O" '{"Final Judgment": "150000", "Plaintiff Max Bid": "100000"}'
         case_number_arg = arg(2)
         field_updates_arg = arg(3)
-        
         if not case_number_arg or not field_updates_arg:
             print(json.dumps({
                 "success": False,
                 "error": "case_number and field_updates are required",
-                "usage": "python auction_utils.py update_sale_fields <case_number> '<json_field_updates>'",
+                "usage": "python auction_utils.py update_sale_fields <case_number> '<json_field_updates>' [service_account.json]",
                 "example": 'python auction_utils.py update_sale_fields "2025-CA-003741-O" \'{"Parcel ID": "12345", "Address": "123 Main St"}\''
             }))
             exit(1)
-        
         print(update_sale_fields_json(case_number_arg, field_updates_arg))
     else:
         # Default action if no or unknown argument is given
